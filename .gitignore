@@ -9,3 +9,7 @@ figures/
 reference/hs-ckd-aki_figures-1.ai
 scripts/
 reference/EPS
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+*.DS_Store

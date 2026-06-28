@@ -1,0 +1,29 @@
+[workspace]
+authors = ["aumchampaneri <70304105+aumchampaneri@users.noreply.github.com>"]
+channels = ["conda-forge"]
+name = "hs-ckd-aki"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "3.10.18.*"
+git-lfs = "*"
+ipykernel = ">=7.3.0,<8"
+scanpy = ">=1.11.5,<2"
+pytorch = "*"
+scvi-tools = "*"
+ipywidgets = ">=8.1.8,<9"
+pydantic = ">=2.13.4,<3"
+
+[pypi-dependencies]
+cellxgene-census = ">=1.18.0, <2"
+harmonypy = ">=2.0.0, <3"
+celltypist = ">=1.7.1, <2"
+mygene = ">=3.2.2, <4"
+adpbulk = ">=0.1.4, <0.2"
+pydeseq2 = ">=0.5.2, <0.6"
+cell2cell = ">=0.8.4, <0.9"
+decoupler = ">=2.1.4, <3"
+liana = ">=1.7.3, <2"
