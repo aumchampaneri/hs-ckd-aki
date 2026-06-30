@@ -22,10 +22,9 @@ census["census_info"]["summary"].read().concat().to_pandas()
 datasets = census["census_info"]["datasets"].read().concat().to_pandas()
 # %%
 dataset_id = "7ff0197b-d175-49bf-b4fa-150fe0995d93"
-datasets[datasets["dataset_id"] == dataset_id].iloc[0]
-
 file_name = f"{dataset_id}.h5ad"
 file_path = DATA_DIR / file_name
+datasets[datasets["dataset_id"] == dataset_id].iloc[0]
 # %%
 if not file_path.exists():
     print(f"Downloading {dataset_id} to {file_path}...")
