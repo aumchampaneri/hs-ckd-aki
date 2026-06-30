@@ -7,7 +7,7 @@ from pathlib import Path
 SCRIPT_DIR = Path.cwd()
 PROJECT_DIR = SCRIPT_DIR.parent
 
-OUTPUT_DIR = PROJECT_DIR / "outputs/"
+OUTPUT_DIR = PROJECT_DIR / "outputs/" / "pseudobulk_de"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DATA_DIR = PROJECT_DIR / "data/"
@@ -46,10 +46,10 @@ comparison_specs = [
         "group1": "chronic kidney disease",
         "group2": normal_label,
     },
-    {"name": "aki_vs_normal", "group1": "acute kidney failure", "group2": normal_label},
+    {"name": "aki_vs_normal", "group1": "acute kidney injury", "group2": normal_label},
     {
         "name": "aki_vs_ckd",
-        "group1": "acute kidney failure",
+        "group1": "acute kidney injury",
         "group2": "chronic kidney disease",
     },
 ]
@@ -58,6 +58,20 @@ comparison_specs = [
 adata = sc.read_h5ad(adata_path)
 print(f"Loaded Atlas: {adata.n_obs} cells, {adata.n_vars} genes.")
 print(f"Using {adata.raw.n_vars} raw genes for DE.")
+
+
+# %%
+# VALIDATE COMPARISON SPECS
+# > Catch label typos early instead of failing downstream with confusing errors
+####
+_observed_disease_labels = set(adata.obs[disease_key].astype(str).unique())
+for _spec in comparison_specs:
+    for _label in (_spec["group1"], _spec["group2"]):
+        if _label not in _observed_disease_labels:
+            raise ValueError(
+                f"comparison_specs['{_spec['name']}']: label '{_label}' not found in "
+                f"adata.obs['{disease_key}']. Available labels: {sorted(_observed_disease_labels)}"
+            )
 
 
 # %%
@@ -100,32 +114,74 @@ def filter_genes_for_de(counts_mat):
 
 def build_donor_pseudobulk(adata, query=None):
     """
-    Refactored to use adpbulk for aggregation.
-    Generates pseudobulked counts, metadata, and normalized matrices.
+    Uses adpbulk for aggregation (method="sum", identical to summing raw
+    counts within each donor x disease group via a manual design matrix).
+    Mirrors the notebook's manual implementation: pseudobulk *grouping* is
+    strictly donor + disease; adjustment_covariates are NOT part of the
+    grouping key and are joined on afterward as donor-level metadata, so
+    populating adjustment_covariates later won't change which cells get
+    pooled into each pseudobulk sample.
     """
     # 1. Optional subsetting
     sub = adata[adata.obs.query(query).index].copy() if query else adata
-    categories = [donor_key, disease_key] + [
-        c for c in adjustment_covariates if c in sub.obs
-    ]
+    group_cols = [donor_key, disease_key]
 
-    # 2. Aggregation using adpbulk
-    adpb = ADPBulk(sub, categories, use_raw=True)
+    # 2. Aggregation using adpbulk. method="sum" is the library default but
+    # is set explicitly here so the equivalence to the notebook's manual
+    # `design @ raw_counts` summation doesn't silently depend on a default
+    # that could change in a future adpbulk release.
+    adpb = ADPBulk(sub, group_cols, method="sum", use_raw=True)
     counts_df = adpb.fit_transform()
     meta = adpb.get_meta()
 
-    # 3. Retrieve cell counts per group for filtering
-    cell_counts = (
-        sub.obs.groupby(categories, observed=True).size().reset_index(name="n_cells")
+    # ADPBulk pulls columns directly from adata.raw.var.index when
+    # use_raw=True, so gene order should already match adata.raw.var_names.
+    # Assert this explicitly rather than relying on that implementation
+    # detail silently holding - keep_genes (a boolean array aligned to
+    # adata.raw.var_names) is later used to positionally index counts_df
+    # columns in run_pydeseq2, so a mismatch here would silently corrupt
+    # every downstream DE result.
+    expected_genes = adata.raw.var_names.astype(str)
+    assert list(counts_df.columns.astype(str)) == list(expected_genes), (
+        "ADPBulk gene column order does not match adata.raw.var_names; "
+        "downstream gene_id alignment (keep_genes indexing) would be wrong."
     )
-    meta = meta.merge(cell_counts, on=categories, how="left")
 
-    # 4. Filter out pseudobulks with too few cells
-    valid_mask = meta["n_cells"] >= min_cells_per_pseudobulk
+    # 3. Attach donor-level covariates after aggregation (not part of the
+    # grouping key) - matches the notebook's `donor_cov` join.
+    cov_cols = [c for c in adjustment_covariates if c in sub.obs]
+    if cov_cols:
+        donor_cov = (
+            sub.obs[[donor_key] + cov_cols]
+            .astype(str)
+            .drop_duplicates(subset=[donor_key])
+            .set_index(donor_key)
+        )
+        meta = meta.join(donor_cov, on=donor_key)
+
+    # 4. Retrieve cell counts per group for filtering
+    cell_counts = (
+        sub.obs.groupby(group_cols, observed=True).size().reset_index(name="n_cells")
+    )
+    meta = meta.merge(cell_counts, on=group_cols, how="left")
+    # Left-merge should preserve meta's original row order/length (matching
+    # counts_df), but guard against silent misalignment if that ever breaks
+    # (e.g. duplicate category combinations producing extra rows).
+    assert len(meta) == counts_df.shape[0], (
+        "meta and counts_df row counts diverged after merge - "
+        "check for duplicate category combinations in cell_counts."
+    )
+
+    # 5. Filter out pseudobulks with too few cells
+    # NOTE: counts_df (from adpb.fit_transform()) is indexed by pseudobulk
+    # group labels, not by meta's row-number index, so a boolean *Series*
+    # mask (which aligns by label) will fail or silently misalign. Convert
+    # to a numpy array so indexing is purely positional.
+    valid_mask = (meta["n_cells"] >= min_cells_per_pseudobulk).to_numpy()
     meta = meta[valid_mask].reset_index(drop=True)
-    counts_df = counts_df.loc[valid_mask]
+    counts_df = counts_df.iloc[valid_mask]
 
-    # 5. Generate matrices for sensitivity stats (CPM, Log1p)
+    # 6. Generate matrices for sensitivity stats (CPM, Log1p)
     counts_mat = sp.csr_matrix(counts_df.values)
     library_size = np.asarray(counts_mat.sum(axis=1)).ravel()
     cpm = counts_mat.multiply(1e6 / np.maximum(library_size, 1)[:, None]).tocsr()
@@ -283,5 +339,3 @@ def run_pseudobulk_de(spec):
 pseudobulk_results = {}
 for spec in comparison_specs:
     pseudobulk_results[spec["name"]] = run_pseudobulk_de(spec)
-
-print("Pseudobulk DE pipeline completed.")

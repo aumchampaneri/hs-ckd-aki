@@ -12,3 +12,4 @@ data/
 scripts/cache/
 
 # Large files
+outputs/pseudobulk_de/
