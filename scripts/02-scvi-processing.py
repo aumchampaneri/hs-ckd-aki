@@ -25,6 +25,8 @@ import scipy.sparse as sp
 import scvi
 import torch
 
+plt.ioff()
+scvi.settings.seed = 67
 # %%
 adata = sc.read_h5ad(DATA_DIR / "7ff0197b-d175-49bf-b4fa-150fe0995d93.h5ad")
 # %%
@@ -59,7 +61,12 @@ adata.obs["batch"] = adata.obs["batch"].astype("category")
 # %%
 # SCVI: SETUP-INITIALIZE-TRAIN
 ####
-scvi.model.SCVI.setup_anndata(adata, layer="counts", batch_key="batch")
+scvi.model.SCVI.setup_anndata(
+    adata,
+    layer="counts",
+    batch_key="library",  # The primary technical source of noise
+    categorical_covariate_keys=["donor_id"],  # The donor biological/confounding factor
+)
 
 model = scvi.model.SCVI(
     adata,
@@ -84,7 +91,7 @@ model.train(
 train_test_results = model.history["elbo_train"]
 train_test_results["elbo_validation"] = model.history["elbo_validation"]
 train_test_results.iloc[10:].plot(logy=True)  # exclude first 10 epochs
-plt.show()
+plt.savefig(SCVI_DIR / "elbo_convergence.png")
 
 # %%
 # EXTRACTION AND EMBEDDING
@@ -99,3 +106,19 @@ sc.tl.umap(adata, min_dist=0.3)
 ####
 adata.write_h5ad(DATA_DIR / "adata_scvi.h5ad")
 model.save(SCVI_DIR, overwrite=True)
+
+# %%
+# PLOTS
+####
+
+sc.tl.leiden(adata, resolution=0.5)
+
+fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+
+sc.pl.umap(
+    adata, color="library", ax=axes[0], show=False, title="Integration by Library"
+)
+sc.pl.umap(
+    adata, color="donor_id", ax=axes[1], show=False, title="Distribution by Donor"
+)
+sc.pl.umap(adata, color="leiden", ax=axes[2], show=False, title="Clusters (Leiden)")

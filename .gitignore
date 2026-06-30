@@ -1,15 +1,14 @@
-# Ignore data folder
-data/
-input-data/
-scvi_kidney_model/
-outputs/scVI-tm/
-outputs/scVI-de/
-outputs/pseudobulk-de/
-figures/
-reference/hs-ckd-aki_figures-1.ai
-scripts/
-reference/EPS
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+scripts/cache/
+
+# File types
+*.pkl
 *.DS_Store
+
+# Large folders
+data/
+scripts/cache/
+
+# Large files
