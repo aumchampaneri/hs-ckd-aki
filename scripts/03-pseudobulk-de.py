@@ -36,6 +36,7 @@ min_donors_per_group = 5
 min_cells_per_pseudobulk = 25
 min_total_count = 20
 min_detected_donors = 3
+min_compartment_cells = 500  # minimum raw cells in a SubclassLevel1 population before attempting targeted DE
 
 # Keep covariate adjustment conservative
 adjustment_covariates = []
@@ -53,6 +54,12 @@ comparison_specs = [
         "group2": "chronic kidney disease",
     },
 ]
+
+# Whether to run the targeted per-SubclassLevel1 DE contrasts (feeds the
+# SubclassLevel1 triptych plots in 04-plotting.py). Set False to skip and
+# only produce the 3 global comparisons above.
+run_subclasslevel1_targeted_de = True
+subclasslevel1_key = "SubclassLevel1"
 
 # %% LOAD DATA
 adata = sc.read_h5ad(adata_path)
@@ -339,3 +346,169 @@ def run_pseudobulk_de(spec):
 pseudobulk_results = {}
 for spec in comparison_specs:
     pseudobulk_results[spec["name"]] = run_pseudobulk_de(spec)
+
+print("Global pseudobulk DE pipeline completed.")
+
+
+# %%
+# TARGETED SUBCLASSLEVEL1 DE - SPEC BUILDER
+# > For each SubclassLevel1 population with enough raw cells, preflight
+# each of the 3 global comparisons by building that population's donor
+# pseudobulk and counting donors per group post-filtering. Only specs that
+# clear both min_compartment_cells and min_donors_per_group are queued for
+# an actual PyDESeq2 run - this avoids paying for a full DESeq2 fit just to
+# discover a contrast is underpowered.
+####
+def safe_name(value):
+    return str(value).replace("/", "_").replace(" ", "_").replace("-", "-")
+
+
+def subclasslevel1_pseudobulk_group_counts(population, group1, group2):
+    query = f"`{subclasslevel1_key}` == {population!r}"
+    pb = build_donor_pseudobulk(adata, query=query)
+    pb = subset_pseudobulk_to_groups(pb, group1, group2)
+    counts = pb["meta"][disease_key].astype(str).value_counts()
+    return counts, int(pb["meta"]["n_cells"].sum())
+
+
+def build_subclasslevel1_targeted_specs(
+    adata, min_cells=min_compartment_cells, min_donors=min_donors_per_group
+):
+    specs = []
+    skipped = []
+    if subclasslevel1_key not in adata.obs:
+        raise KeyError(f"{subclasslevel1_key} is missing from adata.obs")
+
+    for population, n_cells in (
+        adata.obs[subclasslevel1_key].astype(str).value_counts().items()
+    ):
+        if n_cells < min_cells:
+            skipped.append(
+                {
+                    "population": population,
+                    "reason": "too_few_cells",
+                    "n_cells": int(n_cells),
+                }
+            )
+            continue
+
+        for comp in comparison_specs:
+            try:
+                donor_counts, retained_cells = subclasslevel1_pseudobulk_group_counts(
+                    population, comp["group1"], comp["group2"]
+                )
+            except Exception as exc:
+                skipped.append(
+                    {
+                        "population": population,
+                        "comparison_id": comp["name"],
+                        "reason": f"preflight_failed: {exc}",
+                        "n_cells": int(n_cells),
+                    }
+                )
+                continue
+
+            n1 = int(donor_counts.get(comp["group1"], 0))
+            n2 = int(donor_counts.get(comp["group2"], 0))
+            if min(n1, n2) < min_donors:
+                skipped.append(
+                    {
+                        "population": population,
+                        "comparison_id": comp["name"],
+                        "reason": "too_few_pseudobulk_donors_after_cell_filter",
+                        "n_cells": int(n_cells),
+                        "retained_cells": retained_cells,
+                        "n_donors_group1": n1,
+                        "n_donors_group2": n2,
+                    }
+                )
+                continue
+
+            pop_safe = safe_name(population)
+            specs.append(
+                {
+                    "name": f"targeted_SubclassLevel1_{pop_safe}_{comp['name']}",
+                    "query": f"`{subclasslevel1_key}` == {population!r}",
+                    "group1": comp["group1"],
+                    "group2": comp["group2"],
+                    "population": population,
+                    "n_cells": int(n_cells),
+                    "retained_cells_after_pseudobulk_filter": retained_cells,
+                    "n_donors_group1": n1,
+                    "n_donors_group2": n2,
+                }
+            )
+
+    return specs, skipped
+
+
+# %%
+# TARGETED SUBCLASSLEVEL1 DE - EXECUTION
+# > Runs run_pseudobulk_de for every queued spec, writing
+# pseudobulk_de_targeted_SubclassLevel1_{population}_{comparison_id}.csv
+# into OUTPUT_DIR (same directory as the global comparisons), which is what
+# 04-plotting.py's SubclassLevel1 triptych functions look for.
+####
+if run_subclasslevel1_targeted_de:
+    subclasslevel1_targeted_specs, subclasslevel1_skipped_specs = (
+        build_subclasslevel1_targeted_specs(adata)
+    )
+
+    subclasslevel1_targeted_specs_df = pd.DataFrame(subclasslevel1_targeted_specs)
+    subclasslevel1_skipped_specs_df = pd.DataFrame(subclasslevel1_skipped_specs)
+    subclasslevel1_targeted_specs_df.to_csv(
+        OUTPUT_DIR / "subclasslevel1_targeted_pseudobulk_specs.csv", index=False
+    )
+    subclasslevel1_skipped_specs_df.to_csv(
+        OUTPUT_DIR / "subclasslevel1_targeted_pseudobulk_skipped_specs.csv", index=False
+    )
+
+    print(
+        f"SubclassLevel1 targeted specs: {len(subclasslevel1_targeted_specs)} runnable, "
+        f"{len(subclasslevel1_skipped_specs)} skipped (see subclasslevel1_targeted_pseudobulk_skipped_specs.csv)"
+    )
+
+    subclasslevel1_run_records = []
+    subclasslevel1_results = {}
+    for spec in subclasslevel1_targeted_specs:
+        out_path = OUTPUT_DIR / f"pseudobulk_de_{spec['name']}.csv"
+        if out_path.exists():
+            print("Exists, skipping", out_path.name)
+            subclasslevel1_run_records.append(
+                {"name": spec["name"], "status": "exists"}
+            )
+            continue
+
+        run_spec = {
+            "name": spec["name"],
+            "query": spec["query"],
+            "group1": spec["group1"],
+            "group2": spec["group2"],
+        }
+        try:
+            subclasslevel1_results[spec["name"]] = run_pseudobulk_de(run_spec)
+            subclasslevel1_run_records.append(
+                {"name": spec["name"], "status": "completed"}
+            )
+        except ValueError as exc:
+            print("Skipping underpowered contrast:", spec["name"], exc)
+            subclasslevel1_run_records.append(
+                {"name": spec["name"], "status": "skipped", "reason": str(exc)}
+            )
+        except Exception as exc:
+            print("Failed contrast:", spec["name"], exc)
+            subclasslevel1_run_records.append(
+                {"name": spec["name"], "status": "failed", "reason": str(exc)}
+            )
+
+    if subclasslevel1_run_records:
+        pd.DataFrame(subclasslevel1_run_records).to_csv(
+            OUTPUT_DIR / "subclasslevel1_targeted_pseudobulk_run_records.csv",
+            index=False,
+        )
+
+    print("SubclassLevel1 targeted DE pipeline completed.")
+else:
+    print(
+        "run_subclasslevel1_targeted_de = False; skipping targeted SubclassLevel1 DE."
+    )
