@@ -7,10 +7,10 @@ from pathlib import Path
 SCRIPT_DIR = Path.cwd()
 PROJECT_DIR = SCRIPT_DIR.parent
 
-OUTPUT_DIR = PROJECT_DIR / "outputs/"
+OUTPUT_DIR = PROJECT_DIR / "outputs/" / "pseudobulk_de"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-PLOT_DIR = OUTPUT_DIR / "plots/" / "pseudobulk_de"
+PLOT_DIR = PROJECT_DIR / "outputs/" / "plots/" / "pseudobulk_de"
 PLOT_DIR.mkdir(parents=True, exist_ok=True)
 
 DATA_DIR = PROJECT_DIR / "data/"
@@ -40,6 +40,12 @@ complement_volcano_dir.mkdir(parents=True, exist_ok=True)
 
 inflammasome_volcano_dir = PLOT_DIR / "inflammasome_aware"
 inflammasome_volcano_dir.mkdir(parents=True, exist_ok=True)
+
+concordance_dir = PLOT_DIR / "concordance"
+concordance_dir.mkdir(parents=True, exist_ok=True)
+
+pathway_level_dir = PLOT_DIR / "pathway_level"
+pathway_level_dir.mkdir(parents=True, exist_ok=True)
 
 background_color = "#d1d5db"
 
@@ -371,7 +377,7 @@ def load_pseudobulk_de_tables(output_dir, prefix="pseudobulk_de_"):
     return tables
 
 
-all_pseudobulk_de_tables = load_pseudobulk_de_tables(OUTPUT_DIR / "pseudobulk_de")
+all_pseudobulk_de_tables = load_pseudobulk_de_tables(OUTPUT_DIR)
 print("Loaded gene-level DE tables:", sorted(all_pseudobulk_de_tables))
 
 
@@ -1077,5 +1083,254 @@ subclasslevel1_inflammasome_triptych_manifest = (
         max_triptychs=None,
     )
 )
+
+
+# %%
+# CROSS-CONTRAST CONCORDANCE SCATTER
+# > Reads concordance_{x}_vs_{y}.csv written by 03-pseudobulk-de.py (one row
+# per gene tested in both contrasts) and plots log2FC(x) vs log2FC(y),
+# colored by complement/inflammasome pathway membership. Answers a question
+# no single volcano plot can: is gene dysregulation shared across disease
+# states relative to the same baseline, or state/contrast-specific? Points
+# in the upper-right/lower-left quadrants are concordant; off-diagonal
+# points are discordant (state-specific).
+####
+def load_concordance_table(output_dir, x_id, y_id):
+    path = output_dir / f"concordance_{x_id}_vs_{y_id}.csv"
+    if not path.exists():
+        return None
+    return pd.read_csv(path)
+
+
+def annotate_concordance_pathways(df):
+    df = df.copy()
+    df["is_complement"] = df["gene_symbol"].isin(complement_symbol_set)
+    df["is_inflammasome"] = df["gene_symbol"].isin(inflammasome_symbol_set)
+    df["primary_complement_pathway"] = df["gene_symbol"].map(
+        complement_gene_to_primary_pathway
+    )
+    df["primary_inflammasome_program"] = df["gene_symbol"].map(
+        inflammasome_gene_to_primary_program
+    )
+    return df
+
+
+def plot_concordance_scatter(
+    df, x_id, y_id, gene_set="complement", q_threshold=0.05, label_top_n=16
+):
+    """gene_set: 'complement' or 'inflammasome' - which panel/palette to overlay."""
+    df = annotate_concordance_pathways(df)
+    is_col = "is_complement" if gene_set == "complement" else "is_inflammasome"
+    pathway_col = (
+        "primary_complement_pathway"
+        if gene_set == "complement"
+        else "primary_inflammasome_program"
+    )
+    palette = (
+        complement_pathway_palette if gene_set == "complement" else inflammasome_palette
+    )
+    other_key = "complement_other" if gene_set == "complement" else "inflammasome_other"
+
+    bg = df[~df[is_col]]
+    panel = df[df[is_col]]
+    if panel.empty:
+        print(f"No {gene_set} genes with data for concordance plot {x_id} vs {y_id}.")
+        return None
+
+    fig, ax = plt.subplots(figsize=(7.5, 6.5))
+    if not bg.empty:
+        ax.scatter(
+            bg["log2fc_x"],
+            bg["log2fc_y"],
+            s=7,
+            c=background_color,
+            alpha=0.3,
+            linewidths=0,
+            rasterized=True,
+        )
+
+    for pathway, color in palette.items():
+        if pathway == other_key:
+            continue
+        sub = panel[panel[pathway_col] == pathway]
+        if sub.empty:
+            continue
+        marker = (
+            "s" if pathway in {"regulator", "sensors", "nlrp3_mito_stress"} else "o"
+        )
+        edge_widths = np.where(sub["significance_class"] == "both_sig", 0.9, 0.35)
+        ax.scatter(
+            sub["log2fc_x"],
+            sub["log2fc_y"],
+            s=48,
+            c=color,
+            marker=marker,
+            edgecolors="black",
+            linewidths=edge_widths,
+            alpha=0.9,
+            label=pathway,
+        )
+
+    axis_lim = (
+        np.nanmax(
+            np.abs(np.concatenate([df["log2fc_x"].dropna(), df["log2fc_y"].dropna()]))
+        )
+        * 1.1
+    )
+    axis_lim = max(axis_lim, 1)
+    ax.set_xlim(-axis_lim, axis_lim)
+    ax.set_ylim(-axis_lim, axis_lim)
+    ax.axhline(0, color="#111827", lw=0.8, alpha=0.5)
+    ax.axvline(0, color="#111827", lw=0.8, alpha=0.5)
+    ax.plot(
+        [-axis_lim, axis_lim],
+        [-axis_lim, axis_lim],
+        color="#9ca3af",
+        lw=0.8,
+        ls="--",
+        alpha=0.6,
+    )
+
+    label_pool = panel[panel["significance_class"] == "both_sig"].copy()
+    if len(label_pool) < label_top_n:
+        label_pool = panel.sort_values(
+            ["significance_class", "q_value_x", "q_value_y"],
+            key=lambda s: (
+                s
+                if s.name != "significance_class"
+                else s.map(
+                    {"both_sig": 0, "x_only_sig": 1, "y_only_sig": 1, "neither_sig": 2}
+                )
+            ),
+        )
+    for _, row in label_pool.head(label_top_n).iterrows():
+        ax.annotate(
+            str(row["gene_symbol"]),
+            xy=(row["log2fc_x"], row["log2fc_y"]),
+            xytext=(3, 3),
+            textcoords="offset points",
+            fontsize=7,
+            color="#374151",
+        )
+
+    x_title = comparison_title_map.get(x_id, x_id)
+    y_title = comparison_title_map.get(y_id, y_id)
+    n_concordant = int((panel["sign_concordant"].astype("boolean").fillna(False)).sum())
+    ax.set_title(
+        f"{gene_set.capitalize()} gene concordance: {x_title} vs {y_title}\n"
+        f"{n_concordant}/{len(panel)} {gene_set} genes concordant in direction",
+        fontsize=11,
+    )
+    ax.set_xlabel(f"log2FC, {x_title}")
+    ax.set_ylabel(f"log2FC, {y_title}")
+    ax.grid(True, alpha=0.15)
+    ax.legend(frameon=False, fontsize=7, loc="upper left")
+
+    fig.tight_layout()
+    out_stem = f"concordance_{gene_set}_{x_id}_vs_{y_id}"
+    fig.savefig(concordance_dir / f"{out_stem}.png", dpi=300, bbox_inches="tight")
+    fig.savefig(concordance_dir / f"{out_stem}.pdf", bbox_inches="tight")
+    plt.show()
+    return fig
+
+
+concordance_pairs = [("ckd_vs_normal", "aki_vs_normal")]
+for x_id, y_id in concordance_pairs:
+    concordance_table = load_concordance_table(OUTPUT_DIR, x_id, y_id)
+    if concordance_table is None:
+        print(
+            f"No concordance table found for {x_id} vs {y_id} - run 03-pseudobulk-de.py first."
+        )
+        continue
+    plot_concordance_scatter(concordance_table, x_id, y_id, gene_set="complement")
+    plot_concordance_scatter(concordance_table, x_id, y_id, gene_set="inflammasome")
+
+
+# %%
+# PATHWAY-LEVEL GROUP-DIFFERENCE SUMMARY PLOT
+# > Reads pathway_level_group_tests.csv (donor-level module score,
+# Mann-Whitney U per program per comparison) written by 03-pseudobulk-de.py.
+# One dot per program x comparison: x-axis = effect size (median score
+# difference), color = signed -log10(q), size = -log10(q). This is the
+# formal pathway-level counterpart to eyeballing how many individual genes
+# clear q<0.05 on a volcano plot.
+####
+def load_pathway_level_tests(output_dir):
+    path = output_dir / "pathway_level_group_tests.csv"
+    if not path.exists():
+        return None
+    return pd.read_csv(path)
+
+
+def plot_pathway_level_summary(
+    df, gene_set, comparison_ids=global_comparison_ids, q_threshold=0.05
+):
+    sub = df[(df["gene_set"] == gene_set) & (df["status"] == "tested")].copy()
+    if sub.empty:
+        print(f"No tested {gene_set} pathway-level rows to plot.")
+        return None
+
+    sub["comparison_label"] = sub["comparison_id"].map(
+        lambda c: comparison_title_map.get(c, c)
+    )
+    sub = sub[sub["comparison_id"].isin(comparison_ids)]
+    sub["neg_log10_q"] = -np.log10(sub["q_value"].clip(lower=1e-300))
+    sub["is_significant"] = sub["q_value"] <= q_threshold
+
+    program_order = (
+        sub.groupby("program")["neg_log10_q"]
+        .max()
+        .sort_values(ascending=True)
+        .index.tolist()
+    )
+    comparison_order = [
+        comparison_title_map.get(c, c)
+        for c in comparison_ids
+        if c in sub["comparison_id"].unique()
+    ]
+
+    y_lookup = {p: i for i, p in enumerate(program_order)}
+    x_lookup = {c: i for i, c in enumerate(comparison_order)}
+
+    fig, ax = plt.subplots(figsize=(6.5, max(4.5, 0.4 * len(program_order) + 1.5)))
+    max_abs_diff = max(sub["median_diff_group1_minus_group2"].abs().max(), 0.1)
+    sca = ax.scatter(
+        sub["comparison_label"].map(x_lookup),
+        sub["program"].map(y_lookup),
+        s=40 + 220 * (sub["neg_log10_q"].clip(upper=10) / 10),
+        c=sub["median_diff_group1_minus_group2"],
+        cmap="coolwarm",
+        vmin=-max_abs_diff,
+        vmax=max_abs_diff,
+        edgecolors=np.where(sub["is_significant"], "black", "#9ca3af"),
+        linewidths=np.where(sub["is_significant"], 1.0, 0.3),
+    )
+    ax.set_xticks(range(len(comparison_order)))
+    ax.set_xticklabels(comparison_order, rotation=20, ha="right")
+    ax.set_yticks(range(len(program_order)))
+    ax.set_yticklabels(program_order)
+    ax.set_title(
+        f"{gene_set.capitalize()} pathway-level group differences\n"
+        "donor module score (Mann-Whitney U), dot size/outline = significance",
+        fontsize=11,
+    )
+    ax.grid(True, axis="x", alpha=0.15)
+    cbar = fig.colorbar(sca, ax=ax, shrink=0.75)
+    cbar.set_label("median score diff (group1 - group2)")
+
+    fig.tight_layout()
+    out_stem = f"pathway_level_summary_{gene_set}"
+    fig.savefig(pathway_level_dir / f"{out_stem}.png", dpi=300, bbox_inches="tight")
+    fig.savefig(pathway_level_dir / f"{out_stem}.pdf", bbox_inches="tight")
+    plt.show()
+    return fig
+
+
+pathway_level_tests_table = load_pathway_level_tests(OUTPUT_DIR)
+if pathway_level_tests_table is None:
+    print("No pathway_level_group_tests.csv found - run 03-pseudobulk-de.py first.")
+else:
+    plot_pathway_level_summary(pathway_level_tests_table, gene_set="complement")
+    plot_pathway_level_summary(pathway_level_tests_table, gene_set="inflammasome")
 
 print("Triptych plotting pipeline completed.")
