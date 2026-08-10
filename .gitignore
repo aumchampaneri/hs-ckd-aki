@@ -6,6 +6,7 @@ scripts/cache/
 # File types
 *.pkl
 *.DS_Store
+*.svg
 
 # Large folders
 data/
