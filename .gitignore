@@ -7,6 +7,7 @@ scripts/cache/
 *.pkl
 *.DS_Store
 *.svg
+*.ipynb
 
 # Large folders
 data/
