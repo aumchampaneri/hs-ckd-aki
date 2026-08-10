@@ -21,6 +21,7 @@ import scanpy as sc
 plt.ioff()
 # %%
 adata = sc.read_h5ad(DATA_DIR / "adata_scvi.h5ad")
+adata
 
 # %% PLOT SETUP
 sc.set_figure_params(
@@ -131,12 +132,12 @@ adata.obs[
 ].head()
 
 # %% PLOT COMPLEMENT SCORES
-sc.pl.umap(adata, color="Class", save="_full_dataset_Class.svg", show=False)
-sc.pl.umap(adata, color="SubclassLevel1", save="_full_dataset_SubclassLevel1.svg", show=False)
-sc.pl.umap(adata, color="SubclassLevel2", save="_full_dataset_SubclassLevel2.svg", show=False)
-sc.pl.umap(adata, color="cell_type", save="_full_dataset_cell_type.svg", show=False)
-sc.pl.umap(adata, color="tissue", save="_full_dataset_tissue.svg", show=False)
-sc.pl.umap(adata, color="disease", save="_full_dataset_disease.svg", show=False)
+sc.pl.umap(adata, color="Class", layer="X_scVI", save="_full_dataset_Class.svg", show=False)
+sc.pl.umap(adata, color="SubclassLevel1", layer="X_scVI", save="_full_dataset_SubclassLevel1.svg", show=False)
+sc.pl.umap(adata, color="SubclassLevel2", layer="X_scVI", save="_full_dataset_SubclassLevel2.svg", show=False)
+sc.pl.umap(adata, color="cell_type", layer="X_scVI", save="_full_dataset_cell_type.svg", show=False)
+sc.pl.umap(adata, color="tissue", layer="X_scVI", save="_full_dataset_tissue.svg", show=False)
+sc.pl.umap(adata, color="disease", layer="X_scVI", save="_full_dataset_disease.svg", show=False)
 
 sc.pl.umap(
     adata,
@@ -144,6 +145,7 @@ sc.pl.umap(
     cmap="inferno",
     vmin="p1",
     vmax="p99",
+    layer="X_scVI",
     save="_full_dataset_program_scores.svg",
     show=False
 )
@@ -151,6 +153,7 @@ sc.pl.umap(
 sc.pl.umap(
     adata,
     color="dominant_pathway",
+    layer="X_scVI",
     save="_full_dataset_dominant_pathway.svg",
 )
 
