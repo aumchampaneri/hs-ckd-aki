@@ -21,3 +21,6 @@ reference/
 outputs/plots/pseudobulk_de
 outputs/eGFR_correlation/
 .ipynb_checkpoints/
+
+# fix
+Analysis.ipynb
