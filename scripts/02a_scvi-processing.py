@@ -39,12 +39,12 @@ adata.raw.X
 adata.raw.X.shape
 adata.raw.X[:5, :5]
 
-adata.X = adata.raw.X.copy()
+adata.X = adata.raw.X.copy()  # Copy raw counts into X for SCVI
 
 # %%
 # HVG: SELECTION-SUBSET-STORE
 ####
-scvi.data.poisson_gene_selection(adata)
+scvi.data.poisson_gene_selection(adata, n_top_genes=4000, inplace=True) # HVG selection
 
 adata = adata[:, adata.var["highly_variable"]].copy()
 adata.layers["counts"] = adata.X.copy()
@@ -64,8 +64,8 @@ adata.obs["batch"] = adata.obs["batch"].astype("category")
 scvi.model.SCVI.setup_anndata(
     adata,
     layer="counts",
-    batch_key="library",  # The primary technical source of noise
-    categorical_covariate_keys=["donor_id"],  # The donor biological/confounding factor
+    batch_key="experiment_id",  # The primary technical source of noise (different sequencing runs)
+    categorical_covariate_keys=["donor_id"],  # Secondary sources of noise (donors)
 )
 
 model = scvi.model.SCVI(
@@ -78,13 +78,12 @@ model = scvi.model.SCVI(
 )
 
 model.train(
-    max_epochs=300,
+    max_epochs=500,
     batch_size=2048,
     early_stopping=True,
     early_stopping_patience=20,
     early_stopping_monitor="elbo_validation",
     accelerator="mps",
-    plan_kwargs={"lr": 1e-3},
 )
 
 # Ensure convergence

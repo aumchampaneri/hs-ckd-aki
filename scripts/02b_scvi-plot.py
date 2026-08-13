@@ -1,5 +1,6 @@
-# %% scVI Processing
-# > Train a scVI model on the CKD-AKI dataset
+# %% scVI Plotting
+# > Plot scVI results
+# > Calculate complement gene program scores
 #
 # %% PATH SETUP
 from pathlib import Path
@@ -13,6 +14,7 @@ DATA_DIR = PROJECT_DIR / "data/"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # %% IMPORTS
+import decoupler as dc
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -63,38 +65,48 @@ def build_raw_gene_symbol_map(adata):
     return dict(zip(raw_var.index.astype(str), raw_var.index.astype(str)))
 
 
-def score_gene_program_from_raw(adata, gene_symbols, score_name, min_genes=2):
+def build_complement_net(adata, gene_sets, min_genes=2):
     gene_map = build_raw_gene_symbol_map(adata)
-    genes_resolved = [gene_map[g] for g in gene_symbols if g in gene_map]
-    missing = [g for g in gene_symbols if g not in gene_map]
 
-    print(f"{score_name}: {len(genes_resolved)}/{len(gene_symbols)} genes resolved")
-    if missing:
-        print(f"  missing: {missing}")
-    if len(genes_resolved) < min_genes:
-        raise ValueError(f"{score_name} has too few resolved genes: {genes_resolved}")
+    net_rows = []
+    resolved_genes = {}
+    missing_genes = {}
+    for program, genes in gene_sets.items():
+        genes_resolved = [gene_map[g] for g in genes if g in gene_map]
+        missing = [g for g in genes if g not in gene_map]
 
-    sc.tl.score_genes(
-        adata,
-        gene_list=genes_resolved,
-        use_raw=True,
-        score_name=score_name,
-    )
-    return genes_resolved, missing
+        print(f"{program}: {len(genes_resolved)}/{len(genes)} genes resolved")
+        if missing:
+            print(f"  missing: {missing}")
+        if len(genes_resolved) < min_genes:
+            raise ValueError(f"{program} has too few resolved genes: {genes_resolved}")
 
-resolved_complement_genes = {}
-missing_complement_genes = {}
-for program, genes in complement_gene_sets.items():
-    resolved, missing = score_gene_program_from_raw(
-        adata,
-        genes,
-        f"{program}_score",
-    )
-    resolved_complement_genes[program] = resolved
-    missing_complement_genes[program] = missing
+        resolved_genes[program] = genes_resolved
+        missing_genes[program] = missing
+        for gene in genes_resolved:
+            net_rows.append({"source": program, "target": gene, "weight": 1.0})
+
+    return pd.DataFrame(net_rows), resolved_genes, missing_genes
+
+
+def score_gene_programs_decoupler(adata, net):
+    # use_raw=True equivalent: score against adata.raw, not adata.X
+    adata_raw = adata.raw.to_adata()
+    adata_raw.obs = adata.obs
+
+    dc.mt.ulm(data=adata_raw, net=net, verbose=True)
+
+    scores = dc.pp.get_obsm(adata=adata_raw, key="score_ulm").to_df()
+    scores.columns = [f"{c}_score" for c in scores.columns]
+    adata.obs[scores.columns] = scores.values
+    return scores.columns.tolist()
+
+complement_net, resolved_complement_genes, missing_complement_genes = build_complement_net(
+    adata, complement_gene_sets
+)
+program_score_cols = score_gene_programs_decoupler(adata, complement_net)
 
 # %% derived complement scores
-program_score_cols = [f"{program}_score" for program in complement_gene_sets]
 producer_score_cols = [
     "classical_score",
     "lectin_score",
