@@ -1,0 +1,14 @@
+metric,value
+cells_nuclei,1388643.0
+genes,35455.0
+total_counts_mean,4573.96630859375
+total_counts_median,3495.0
+total_counts_sd,3904.556640625
+total_counts_min,413.0
+total_counts_max,52329.0
+detected_genes_mean,2188.2559642759156
+detected_genes_median,2007.0
+detected_genes_sd,1162.6823529746216
+detected_genes_min,384.0
+detected_genes_max,7451.0
+matrix_sparsity,0.9382807512543812

@@ -1,0 +1,4 @@
+metric,median,mad_lower_5,mad_upper_5
+nCount_RNA,3509.0,0,12174.0
+nFeature_RNA,2017.0,0,5647.0
+percent.mt,1.3526570048309179,0,6.236978926885563
