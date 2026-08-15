@@ -1,6 +1,6 @@
 # %% scVI Plotting
 # > Plot scVI results
-# > Calculate complement gene program scores
+# > Calculate complement-related transcriptional program scores
 #
 # %% PATH SETUP
 from pathlib import Path
@@ -14,11 +14,16 @@ DATA_DIR = PROJECT_DIR / "data/"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # %% IMPORTS
-import decoupler as dc
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import decoupler as dc
+
+print(f"scanpy {sc.__version__}, decoupler {dc.__version__}")  # log versions for methods reporting
 
 plt.ioff()
 # %%
@@ -36,7 +41,13 @@ sc.set_figure_params(
 )
 sc.settings.figdir = OUTPUT_DIR
 
-# %% complement scoring
+# %% complement module definitions (non-overlapping)
+# Each gene is assigned to exactly one module: receptors (C3AR1, C5AR1, C5AR2)
+# live only in `receptor`, never in a production module (previously also in
+# alternative/terminal, causing double counting). `cfhr` is scored but held
+# out of every composite equation below, since CFHR1-5 competitively
+# antagonize CFH and do not share a uniform inhibitory direction with the
+# other `regulator` genes.
 complement_gene_sets = {
     "classical": [
         "C1QA", "C1QB", "C1QC", "C1R", "C1S", "C2", "C4A", "C4B", "C4BPA", "C4BPB"
@@ -45,18 +56,26 @@ complement_gene_sets = {
         "MBL2", "FCN1", "FCN2", "FCN3", "MASP1", "MASP2", "MASP3"
     ],
     "alternative": [
-        "C3", "CFB", "CFD", "CFP", "C3AR1"
+        "C3", "CFB", "CFD", "CFP"
     ],
     "terminal": [
-        "C5", "C5AR1", "C5AR2", "C6", "C7", "C8A", "C8B", "C8G", "C9"
+        "C5", "C6", "C7", "C8A", "C8B", "C8G", "C9"
     ],
     "receptor": [
         "C3AR1", "C5AR1", "C5AR2", "CR1", "CR2", "ITGAM", "ITGAX", "VSIG4"
     ],
     "regulator": [
-        "CFH", "CFHR1", "CFHR2", "CFHR3", "CFHR4", "CFHR5", "CFI", "CD46", "CD55", "CD59", "SERPING1"
+        "CFH", "CFI", "CD46", "CD55", "CD59", "SERPING1"
     ],
 }
+
+# Reported descriptively only; excluded from production/response/activation/load equations.
+descriptive_gene_sets = {
+    "cfhr": ["CFHR1", "CFHR2", "CFHR3", "CFHR4", "CFHR5"],
+}
+
+MIN_GENES_PER_MODULE = 2  # modules resolving fewer genes than this are not scored
+
 
 def build_raw_gene_symbol_map(adata):
     raw_var = adata.raw.var
@@ -65,32 +84,34 @@ def build_raw_gene_symbol_map(adata):
     return dict(zip(raw_var.index.astype(str), raw_var.index.astype(str)))
 
 
-def build_complement_net(adata, gene_sets, min_genes=2):
+def build_net(adata, gene_sets, min_genes=MIN_GENES_PER_MODULE):
     gene_map = build_raw_gene_symbol_map(adata)
 
     net_rows = []
     resolved_genes = {}
     missing_genes = {}
-    for program, genes in gene_sets.items():
+    for module, genes in gene_sets.items():
         genes_resolved = [gene_map[g] for g in genes if g in gene_map]
         missing = [g for g in genes if g not in gene_map]
 
-        print(f"{program}: {len(genes_resolved)}/{len(genes)} genes resolved")
+        print(f"{module}: {len(genes_resolved)}/{len(genes)} genes resolved")
         if missing:
             print(f"  missing: {missing}")
         if len(genes_resolved) < min_genes:
-            raise ValueError(f"{program} has too few resolved genes: {genes_resolved}")
+            raise ValueError(f"{module} has too few resolved genes: {genes_resolved}")
 
-        resolved_genes[program] = genes_resolved
-        missing_genes[program] = missing
+        resolved_genes[module] = genes_resolved
+        missing_genes[module] = missing
         for gene in genes_resolved:
-            net_rows.append({"source": program, "target": gene, "weight": 1.0})
+            net_rows.append({"source": module, "target": gene, "weight": 1.0})
 
     return pd.DataFrame(net_rows), resolved_genes, missing_genes
 
 
-def score_gene_programs_decoupler(adata, net):
-    # use_raw=True equivalent: score against adata.raw, not adata.X
+def score_modules_ulm(adata, net):
+    # ULM is a deterministic closed-form linear regression per cell -- no
+    # random seed applies. Scored against adata.raw (raw counts), matching
+    # the original use_raw=True convention.
     adata_raw = adata.raw.to_adata()
     adata_raw.obs = adata.obs
 
@@ -101,63 +122,145 @@ def score_gene_programs_decoupler(adata, net):
     adata.obs[scores.columns] = scores.values
     return scores.columns.tolist()
 
-complement_net, resolved_complement_genes, missing_complement_genes = build_complement_net(
+
+def zscore_columns(adata, cols, suffix="_z"):
+    # Places modules built from gene sets of different sizes (n=4 to n=10)
+    # on a comparable scale before they are combined in any composite metric.
+    z_cols = []
+    for col in cols:
+        z_col = col.replace("_score", suffix)
+        vals = adata.obs[col].to_numpy()
+        adata.obs[z_col] = (vals - vals.mean()) / vals.std(ddof=0)
+        z_cols.append(z_col)
+    return z_cols
+
+complement_net, resolved_complement_genes, missing_complement_genes = build_net(
     adata, complement_gene_sets
 )
-program_score_cols = score_gene_programs_decoupler(adata, complement_net)
+program_score_cols = score_modules_ulm(adata, complement_net)
+program_z_cols = zscore_columns(adata, program_score_cols)
 
-# %% derived complement scores
-producer_score_cols = [
-    "classical_score",
-    "lectin_score",
-    "alternative_score",
-    "terminal_score",
-    "regulator_score",
-]
-activation_score_cols = [
-    "classical_score",
-    "lectin_score",
-    "alternative_score",
-    "terminal_score",
-    "receptor_score",
-]
+descriptive_net, resolved_descriptive_genes, missing_descriptive_genes = build_net(
+    adata, descriptive_gene_sets, min_genes=2
+)
+descriptive_score_cols = score_modules_ulm(adata, descriptive_net)
+descriptive_z_cols = zscore_columns(adata, descriptive_score_cols)  # cfhr_z: descriptive only
 
-adata.obs["production_score"] = adata.obs[producer_score_cols].mean(axis=1)
-adata.obs["response_score"] = adata.obs["receptor_score"]
-adata.obs["activation_index"] = adata.obs[activation_score_cols].mean(axis=1) - adata.obs["regulator_score"]
-adata.obs["net_complement_load"] = adata.obs[program_score_cols].sum(axis=1)
+# %% complement-related transcriptional program scores (composite metrics)
+# Renamed from "complement activation scores": these are transcript-level
+# enrichment proxies, not validated measures of protein-level complement
+# activation (cleavage, deposition, or secretion).
+#
+# z_p = z-scored ULM score for module p in {classical, lectin, alternative, terminal, receptor, regulator}
+#
+#   production_score    = mean(z_classical, z_lectin, z_alternative, z_terminal)
+#   response_score       = z_receptor
+#   activation_index      = mean(z_classical, z_lectin, z_alternative, z_terminal, z_receptor) - z_regulator
+#   net_complement_load   = sum(z_classical, z_lectin, z_alternative, z_terminal, z_receptor, z_regulator)
+#   dominant_pathway      = argmax_p(z_p)   (over the six non-overlapping modules; cfhr excluded)
+
+production_cols = ["classical_z", "lectin_z", "alternative_z", "terminal_z"]
+activating_cols = production_cols + ["receptor_z"]
+
+adata.obs["production_score"] = adata.obs[production_cols].mean(axis=1)
+adata.obs["response_score"] = adata.obs["receptor_z"]
+adata.obs["activation_index"] = adata.obs[activating_cols].mean(axis=1) - adata.obs["regulator_z"]
+adata.obs["net_complement_load"] = adata.obs[program_z_cols].sum(axis=1)
 adata.obs["dominant_pathway"] = (
-    adata.obs[program_score_cols]
+    adata.obs[program_z_cols]
     .idxmax(axis=1)
-    .str.replace("_score", "", regex=False)
+    .str.replace("_z", "", regex=False)
     .astype("category")
 )
 
-adata.obs[
-    program_score_cols + [
-        "production_score",
-        "response_score",
-        "activation_index",
-        "net_complement_load",
-        "dominant_pathway",
-    ]
-].head()
+composite_cols = [
+    "production_score",
+    "response_score",
+    "activation_index",
+    "net_complement_load",
+    "dominant_pathway",
+]
+adata.obs[program_z_cols + descriptive_z_cols + composite_cols].head()
 
-# %% PLOT COMPLEMENT SCORES
-sc.pl.umap(adata, color="Class", layer="X_scVI", save="_full_dataset_Class.svg", show=False)
-sc.pl.umap(adata, color="SubclassLevel1", layer="X_scVI", save="_full_dataset_SubclassLevel1.svg", show=False)
-sc.pl.umap(adata, color="SubclassLevel2", layer="X_scVI", save="_full_dataset_SubclassLevel2.svg", show=False)
-sc.pl.umap(adata, color="cell_type", layer="X_scVI", save="_full_dataset_cell_type.svg", show=False)
-sc.pl.umap(adata, color="tissue", layer="X_scVI", save="_full_dataset_tissue.svg", show=False)
-sc.pl.umap(adata, color="disease", layer="X_scVI", save="_full_dataset_disease.svg", show=False)
+# %% CONFOUND ANALYSIS: are scores driven by technical covariates?
+####
+# Reviewer request: demonstrate module scores are not primarily driven by
+# library size, gene-detection depth, mitochondrial fraction, modality, or
+# batch, rather than assuming ULM/z-scoring resolves this on its own.
+#
+# NOTE ON SAMPLE SIZE: at ~1.4M cells, essentially every correlation will be
+# "statistically significant" (p < 0.05) regardless of practical relevance.
+# Report and interpret the effect size (rho, eta) here, not the p-value.
+#
+# NOTE ON INTERPRETATION: a nonzero correlation with e.g. nCount_RNA is not
+# automatically a confound -- cell types/disease states that biologically
+# differ in transcriptional output will also differ in library size. This
+# analysis flags candidates for concern; ruling a correlation in or out as
+# artifactual requires checking whether it persists within cell type/disease
+# strata (see partial-correlation note at the end of this section).
+from scipy.stats import spearmanr, kruskal
+
+# Adjust to your actual obs column names
+CONTINUOUS_COVARIATES = ["nCount_RNA", "nFeature_RNA", "percent.mt"]
+CATEGORICAL_COVARIATES = ["experiment_id", "donor_id", "suspension_type"]  # suspension_type ~ modality (cell vs nucleus); rename if your schema differs
+
+score_cols_to_check = program_z_cols + descriptive_z_cols + [
+    "production_score", "response_score", "activation_index", "net_complement_load"
+]
+
+confound_rows = []
+for score_col in score_cols_to_check:
+    for cov in CONTINUOUS_COVARIATES:
+        if cov not in adata.obs.columns:
+            print(f"Skipping missing covariate column: {cov}")
+            continue
+        rho, p = spearmanr(adata.obs[score_col], adata.obs[cov])
+        confound_rows.append({"score": score_col, "covariate": cov, "type": "continuous", "spearman_rho": rho, "p_value": p})
+
+confound_continuous = pd.DataFrame(confound_rows)
+print("Correlation of module/composite scores with continuous technical covariates (sorted by |rho|):")
+print(confound_continuous.sort_values("spearman_rho", key=lambda s: s.abs(), ascending=False).to_string(index=False))
+confound_continuous.to_csv(OUTPUT_DIR / "confound_correlations_continuous.csv", index=False)
+
+confound_cat_rows = []
+for score_col in score_cols_to_check:
+    for cov in CATEGORICAL_COVARIATES:
+        if cov not in adata.obs.columns:
+            print(f"Skipping missing covariate column: {cov}")
+            continue
+        groups = [g[score_col].to_numpy() for _, g in adata.obs.groupby(cov, observed=True)]
+        groups = [g for g in groups if len(g) > 0]
+        if len(groups) < 2:
+            continue
+        stat, p = kruskal(*groups)
+        # eta-squared approximation for Kruskal-Wallis: (H - k + 1) / (n - k)
+        n_total = sum(len(g) for g in groups)
+        k = len(groups)
+        eta_sq = max((stat - k + 1) / (n_total - k), 0)
+        confound_cat_rows.append({
+            "score": score_col, "covariate": cov, "type": "categorical",
+            "kruskal_H": stat, "eta_squared_approx": eta_sq, "p_value": p, "n_groups": k,
+        })
+
+confound_categorical = pd.DataFrame(confound_cat_rows)
+print("Association of module/composite scores with categorical technical covariates (sorted by eta^2):")
+print(confound_categorical.sort_values("eta_squared_approx", ascending=False).to_string(index=False))
+confound_categorical.to_csv(OUTPUT_DIR / "confound_associations_categorical.csv", index=False)
+
+# %% PLOT COMPLEMENT-RELATED TRANSCRIPTIONAL PROGRAM SCORES
+sc.pl.umap(adata, color="Class", save="_full_dataset_Class.svg", show=False)
+sc.pl.umap(adata, color="SubclassLevel1", save="_full_dataset_SubclassLevel1.svg", show=False)
+sc.pl.umap(adata, color="SubclassLevel2", save="_full_dataset_SubclassLevel2.svg", show=False)
+sc.pl.umap(adata, color="cell_type", save="_full_dataset_cell_type.svg", show=False)
+sc.pl.umap(adata, color="tissue", save="_full_dataset_tissue.svg", show=False)
+sc.pl.umap(adata, color="disease", save="_full_dataset_disease.svg", show=False)
 
 sc.pl.umap(
     adata,
-    color=program_score_cols + ["activation_index"],
+    color=program_z_cols + descriptive_z_cols + ["activation_index"],
     cmap="inferno",
     vmin="p1",
     vmax="p99",
-    layer="X_scVI",
     save="_full_dataset_program_scores.svg",
     show=False
 )
@@ -165,14 +268,23 @@ sc.pl.umap(
 sc.pl.umap(
     adata,
     color="dominant_pathway",
-    layer="X_scVI",
     save="_full_dataset_dominant_pathway.svg",
 )
 
 sc.pl.violin(
     adata,
-    keys=program_score_cols + ["activation_index"],
+    keys=program_z_cols + ["activation_index"],
     groupby="disease",
     rotation=20,
     save="_full_dataset_program_scores_by_disease.svg",
 )
+
+# %% save resolved/missing gene log for supplementary reporting
+gene_resolution_log = pd.DataFrame([
+    {"module": m, "n_input": len(complement_gene_sets.get(m, descriptive_gene_sets.get(m, []))),
+     "n_resolved": len(resolved_complement_genes.get(m, resolved_descriptive_genes.get(m, []))),
+     "missing": ", ".join(missing_complement_genes.get(m, missing_descriptive_genes.get(m, [])))}
+    for m in list(complement_gene_sets) + list(descriptive_gene_sets)
+])
+gene_resolution_log.to_csv(OUTPUT_DIR / "complement_module_gene_resolution.csv", index=False)
+gene_resolution_log
