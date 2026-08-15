@@ -17,6 +17,7 @@ scvi-tools = "*"
 ipywidgets = ">=8.1.8,<9"
 pydantic = ">=2.13.4,<3"
 jupyterlab = ">=4.6.0,<5"
+scikit-image = ">=0.25.2,<0.26"
 
 [pypi-dependencies]
 cellxgene-census = ">=1.18.0, <2"
