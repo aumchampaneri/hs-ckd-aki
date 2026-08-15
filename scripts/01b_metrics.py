@@ -5,6 +5,7 @@
 
 # %% PATH SETUP
 from pathlib import Path
+import gc
 
 SCRIPT_DIR = Path.cwd()
 PROJECT_DIR = SCRIPT_DIR.parent
@@ -34,28 +35,40 @@ adata.var_names_make_unique()
 
 # %% COUNT MATRIX
 ####
+# Reference assignment to avoid copying a massive matrix multiple times
 if "counts" in adata.layers:
-    counts = adata.layers["counts"].copy()
+    counts_ref = adata.layers["counts"]
 elif adata.raw is not None:
-    counts = adata.raw.X.copy()
+    counts_ref = adata.raw.X
 else:
-    counts = adata.X.copy()
+    counts_ref = adata.X
 
-if not sp.issparse(counts):
-    counts = sp.csr_matrix(counts)
+# Force CSR format for memory efficiency, but avoid copying if already CSR
+if not sp.issparse(counts_ref):
+    counts = sp.csr_matrix(counts_ref)
+elif not sp.isspmatrix_csr(counts_ref):
+    counts = counts_ref.tocsr()
+else:
+    counts = counts_ref
 
 values = counts.data
 assert np.all(np.isfinite(values)), "Count matrix contains non-finite values."
 assert np.all(values >= 0), "Count matrix contains negative values."
 assert np.allclose(values, np.round(values)), "Count matrix is not integer-valued."
 
-adata.X = counts.copy()
-adata.layers["counts"] = counts.copy()
+# Assign references instead of .copy()
+adata.X = counts
+adata.layers["counts"] = counts
+
+# Free the temporary reference
+del counts_ref
+gc.collect()
 
 # %% RAW COUNT SUMMARY
 ####
 total_counts = np.asarray(counts.sum(axis=1)).ravel()
-detected_genes = np.asarray((counts > 0).sum(axis=1)).ravel()
+# Use getnnz() instead of (counts > 0) to avoid creating a dense boolean matrix in RAM
+detected_genes = counts.getnnz(axis=1)
 gene_counts = np.asarray(counts.sum(axis=0)).ravel()
 
 count_summary = pd.DataFrame({
@@ -74,15 +87,15 @@ count_summary = pd.DataFrame({
 })
 count_summary.to_csv(QC_DIR / "raw_count_summary.csv", index=False)
 
+del total_counts, detected_genes, gene_counts, counts
+gc.collect()
+
 # %% CALCULATE MAD THRESHOLDS (MATHEMATICAL JUSTIFICATION)
 ####
-# Reviewers prefer MAD (Median Absolute Deviation) over arbitrary cutoffs.
-# Typically, a cell > 3-5 MADs from the median is considered an outlier.
-
 def calculate_mad_thresholds(metric_array, nmads=5):
     median = np.median(metric_array)
     mad = np.median(np.abs(metric_array - median))
-    lower = max(0, median - (nmads * mad)) # Don't go below 0
+    lower = max(0, median - (nmads * mad))
     upper = median + (nmads * mad)
     return lower, upper
 
@@ -101,52 +114,63 @@ qc_cols = [c for c in ["nFeature_RNA", "nCount_RNA", "percent.mt"] if c in adata
 
 if "nCount_RNA" in adata.obs and "nFeature_RNA" in adata.obs:
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-    
-    # 1. Doublets / Empty Droplets
-    sns.scatterplot(
-        data=adata.obs, x="nCount_RNA", y="nFeature_RNA", 
-        alpha=0.1, s=5, ax=axes[0], edgecolor="none"
+
+    # Using ax.scatter with rasterized=True prevents matplotlib from crashing on 1.3M vector points
+    axes[0].scatter(
+        adata.obs["nCount_RNA"], adata.obs["nFeature_RNA"],
+        alpha=0.1, s=1, edgecolor="none", rasterized=True
     )
     axes[0].set_title("Features vs. Total Counts\n(Look for extreme right/top tails = doublets)")
-    
-    # 2. Dying Cells / Stripped Nuclei
+    axes[0].set_xlabel("nCount_RNA")
+    axes[0].set_ylabel("nFeature_RNA")
+
     if "percent.mt" in adata.obs:
-        sns.scatterplot(
-            data=adata.obs, x="nCount_RNA", y="percent.mt", 
-            alpha=0.1, s=5, ax=axes[1], edgecolor="none"
+        axes[1].scatter(
+            adata.obs["nCount_RNA"], adata.obs["percent.mt"],
+            alpha=0.1, s=1, edgecolor="none", rasterized=True
         )
         axes[1].set_title("MT% vs. Total Counts\n(Look for high MT / low counts = dying)")
-        
+        axes[1].set_xlabel("nCount_RNA")
+        axes[1].set_ylabel("percent.mt")
+
     fig.tight_layout()
     fig.savefig(QC_DIR / "qc_joint_distributions.png", dpi=300)
     plt.close(fig)
 
 # %% AMBIENT RNA PROFILING
 ####
-# Highly expressed ubiquitous genes (like Hemoglobin in highly vascularized tissue)
-# that shouldn't be everywhere can indicate ambient RNA soup.
-
 ambient_genes = [g for g in adata.var_names if g.startswith("HBA") or g.startswith("HBB")]
 if ambient_genes:
-    sc.tl.score_genes(adata, gene_list=ambient_genes, score_name="hemoglobin_score", use_raw=False)
-    
+    # Use raw=False to use normalized data if available, but since we reset X to counts,
+    # we must normalize temporarily to score genes safely without leaking memory.
+    adata_tmp = adata[:, ambient_genes].copy()
+    sc.pp.normalize_total(adata_tmp, target_sum=1e4)
+    sc.pp.log1p(adata_tmp)
+
+    sc.tl.score_genes(adata_tmp, gene_list=ambient_genes, score_name="hemoglobin_score")
+    adata.obs["hemoglobin_score"] = adata_tmp.obs["hemoglobin_score"]
+
+    del adata_tmp
+    gc.collect()
+
     fig, ax = plt.subplots(figsize=(7, 5))
-    sns.scatterplot(
-        data=adata.obs, x="nCount_RNA", y="hemoglobin_score", 
-        alpha=0.1, s=5, edgecolor="none"
+    ax.scatter(
+        adata.obs["nCount_RNA"], adata.obs["hemoglobin_score"],
+        alpha=0.1, s=1, edgecolor="none", rasterized=True
     )
     ax.set_title("Hemoglobin Score vs Total Counts\n(High HB in non-RBCs = Ambient RNA)")
+    ax.set_xlabel("nCount_RNA")
+    ax.set_ylabel("Hemoglobin Score")
     fig.savefig(QC_DIR / "ambient_rna_check.png", dpi=300)
     plt.close(fig)
 
 # %% REVIEWER REQUESTED METRICS (ADDITIONAL REPORTING)
 ####
 print("\n=== RAW COUNTS VALIDATION ===")
-x = adata.raw.X if adata.raw is not None else adata.X
-x = x if sp.issparse(x) else sp.csr_matrix(x)
-v = x.data
-print(f"dtype: {x.dtype} | min: {v.min()} | max: {v.max()} | mean: {v.mean():.2f} | sd: {v.std():.2f}")
-print(f"integer-valued: {np.allclose(v, np.round(v))} | nonzero: {x.nnz} | sparsity: {1 - x.nnz / (x.shape[0] * x.shape[1]):.4f}")
+# Avoid pulling a new reference if we already established X is raw counts
+v = adata.X.data
+print(f"dtype: {adata.X.dtype} | min: {v.min()} | max: {v.max()} | mean: {v.mean():.2f} | sd: {v.std():.2f}")
+print(f"integer-valued: {np.allclose(v, np.round(v))} | nonzero: {adata.X.nnz} | sparsity: {1 - adata.X.nnz / (adata.X.shape[0] * adata.X.shape[1]):.4f}")
 
 if "disease" in adata.obs:
     print("\n=== ASSAY & SUSPENSION CROSSTABS ===")
@@ -157,3 +181,6 @@ if "disease" in adata.obs:
     if "donor_id" in adata.obs:
         print("\n=== DONOR DISTRIBUTION ===")
         print(f"Donors per disease state:\n{adata.obs.groupby('disease')['donor_id'].nunique()}")
+
+# Keep memory clean at the end of execution
+gc.collect()
