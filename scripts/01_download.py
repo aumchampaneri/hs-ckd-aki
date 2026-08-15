@@ -17,7 +17,11 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 import cellxgene_census
 
 # %%
-census = cellxgene_census.open_soma(census_version="latest")
+census = cellxgene_census.open_soma()
+census_info = census["census_info"]["summary"].read().concat().to_pandas()
+census_info
+# %%
+census = cellxgene_census.open_soma(census_version="2025-11-08")
 census["census_info"]["summary"].read().concat().to_pandas()
 datasets = census["census_info"]["datasets"].read().concat().to_pandas()
 # %%
@@ -29,7 +33,7 @@ datasets[datasets["dataset_id"] == dataset_id].iloc[0]
 if not file_path.exists():
     print(f"Downloading {dataset_id} to {file_path}...")
     cellxgene_census.download_source_h5ad(
-        dataset_id, to_path=str(file_path), census_version="latest", progress_bar=True
+        dataset_id, to_path=str(file_path), census_version="2025-11-08", progress_bar=True
     )
 else:
     print(f"File already exists at {file_path}. Skipping download.")
