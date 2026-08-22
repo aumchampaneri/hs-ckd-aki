@@ -339,6 +339,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/24/99/4772b8e00a136f3e01236de33b0efda31ee7077203ba5967fcc76da94d65/texttable-1.7.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/29/32/f99009be2e40d2098daae9be8374dde5d976d8af145024758737af0024ab/somacore-1.0.29-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2e/c3/94ade4906a2f88bc935772f59c934013b4205e773bcb4239db114a6da136/pyarrow_hotfix-0.7-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/30/ec/b6c047c2933c8937f6c353fc82a1e2fa7f8fb2101030a128850cb3d2c0da/decontx_python-0.2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/31/5c/08c7f7fe311f32e83f7621cd3f99d805f45519cd06fafb247628b861da7d/multidict-6.7.1-cp310-cp310-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/39/40/d0c5b144ff8f880e4e03da35969ce6ff055cde3e6544b722eda24f19c357/cell2cell-0.8.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/3b/3d/2970b27a11ae17fb2d353e7a179763a2fe6f37d6d2a9f4d40104a2f132e9/stdlib_list-0.12.0-py3-none-any.whl
@@ -5548,6 +5549,44 @@ packages:
   version: '0.7'
   sha256: 3236f3b5f1260f0e2ac070a55c1a7b339c4bb7267839bd2015e283234e758100
   requires_python: '>=3.5'
+- pypi: https://files.pythonhosted.org/packages/30/ec/b6c047c2933c8937f6c353fc82a1e2fa7f8fb2101030a128850cb3d2c0da/decontx_python-0.2.0-py3-none-any.whl
+  name: decontx-python
+  version: 0.2.0
+  sha256: 6675845cc3ad856c4c878640260529c101ad0964decbc62343c991a8926616d2
+  requires_dist:
+  - anndata>=0.8.0
+  - numba>=0.55.0
+  - numpy>=1.21.0
+  - pandas>=1.3.0
+  - scanpy>=1.8.0
+  - scikit-learn>=1.0.0
+  - scipy>=1.7.0
+  - tqdm>=4.60.0
+  - black>=22.0 ; extra == 'all'
+  - matplotlib>=3.5.0 ; extra == 'all'
+  - mypy>=0.991 ; extra == 'all'
+  - myst-parser>=0.18 ; extra == 'all'
+  - pre-commit>=2.20 ; extra == 'all'
+  - pytest-cov>=3.0 ; extra == 'all'
+  - pytest>=6.0 ; extra == 'all'
+  - ruff>=0.1.0 ; extra == 'all'
+  - seaborn>=0.11.0 ; extra == 'all'
+  - sphinx-rtd-theme>=1.0 ; extra == 'all'
+  - sphinx>=4.0 ; extra == 'all'
+  - black>=22.0 ; extra == 'dev'
+  - mypy>=0.991 ; extra == 'dev'
+  - pre-commit>=2.20 ; extra == 'dev'
+  - pytest-cov>=3.0 ; extra == 'dev'
+  - pytest>=6.0 ; extra == 'dev'
+  - ruff>=0.1.0 ; extra == 'dev'
+  - myst-parser>=0.18 ; extra == 'docs'
+  - sphinx-rtd-theme>=1.0 ; extra == 'docs'
+  - sphinx>=4.0 ; extra == 'docs'
+  - matplotlib>=3.5.0 ; extra == 'plotting'
+  - seaborn>=0.11.0 ; extra == 'plotting'
+  - pytest-cov>=3.0 ; extra == 'test'
+  - pytest>=6.0 ; extra == 'test'
+  requires_python: '>=3.8'
 - pypi: https://files.pythonhosted.org/packages/31/5c/08c7f7fe311f32e83f7621cd3f99d805f45519cd06fafb247628b861da7d/multidict-6.7.1-cp310-cp310-macosx_11_0_arm64.whl
   name: multidict
   version: 6.7.1

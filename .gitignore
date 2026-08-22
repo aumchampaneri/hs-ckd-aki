@@ -4,12 +4,17 @@
 scripts/cache/
 
 # File types
+# .svg are too large to commit
+# .ipynb are too large to commit and only used locally
 *.pkl
 *.DS_Store
 *.svg
 *.ipynb
 
 # Large folders
+# data/ is too large to commit - use 01a_download.py to create files
+# scripts/cache/ has no need to commit
+# outputs/pseudobulk_de/ is too large to commit - use 02a_pseudobulk_de.py to create files
 data/
 scripts/cache/
 outputs/pseudobulk_de/
@@ -18,3 +23,4 @@ outputs/pseudobulk_de/
 outputs/plots/pseudobulk_de
 outputs/eGFR_correlation/
 .ipynb_checkpoints/
+outputs/qc/decontx_batches/
