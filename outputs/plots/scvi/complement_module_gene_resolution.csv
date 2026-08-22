@@ -1,0 +1,8 @@
+module,n_input,n_resolved,missing
+classical,10,10,
+lectin,7,6,MASP3
+alternative,4,4,
+terminal,7,7,
+receptor,8,8,
+regulator,6,6,
+cfhr,5,5,
