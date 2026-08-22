@@ -129,7 +129,7 @@ def score_modules_ulm(adata, net):
     if result is not None:
         # decoupler drops cells with zero expression across every matched
         # gene in this module and returns a new, smaller AnnData rather
-        # than mutating adata_raw in place -- use that returned object.
+        # than mutating adata_raw in place; use that returned object.
         adata_raw = result
 
     scores = dc.pp.get_obsm(adata=adata_raw, key="score_ulm").to_df()
@@ -138,8 +138,8 @@ def score_modules_ulm(adata, net):
     # Reindex onto the full cell set: any cells decoupler dropped as "empty"
     # get NaN here (they had literally zero expression of every gene in this
     # module, so there's no real score to assign). At 783/1,367,561 cells
-    # (~0.06%), this is negligible but worth noting in your methods --
-    # dominant_pathway/composite scores will be NaN for these specific cells.
+    # (~0.06%), this is negligible but worth noting.
+    # dominant_pathway/composite scores will be NaN for them
     scores = scores.reindex(adata.obs_names)
     adata.obs[scores.columns] = scores.values
     return scores.columns.tolist()
@@ -240,7 +240,7 @@ score_cols_to_check = program_z_cols + descriptive_z_cols + [
 # NOTE ON MISSINGNESS: ~783 cells (see score_modules_ulm) have NaN for any
 # module they had zero expression in. spearmanr/kruskal default to
 # nan_policy="propagate", which returns NaN for the ENTIRE statistic if even
-# one paired value is missing -- not just those rows. nan_policy="omit"
+# one paired value is missing; not just those rows. nan_policy="omit"
 # (spearmanr) and explicit .dropna() (kruskal) restrict each test to cells
 # with a valid score, rather than discarding the whole column.
 confound_rows = []
