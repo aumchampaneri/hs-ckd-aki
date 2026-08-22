@@ -8,8 +8,10 @@ scripts/cache/
 # .ipynb are too large to commit and only used locally
 *.pkl
 *.DS_Store
-*.svg
 *.ipynb
+
+# Specfic files too large to commit
+outputs/plots/scvi/violin_full_dataset_program_scores_by_disease.svg
 
 # Large folders
 # data/ is too large to commit - use 01a_download.py to create files
