@@ -112,13 +112,35 @@ def score_modules_ulm(adata, net):
     # ULM is a deterministic closed-form linear regression per cell -- no
     # random seed applies. Scored against adata.raw (raw counts), matching
     # the original use_raw=True convention.
+    #
+    # bsize=50000 sized for a 64GB machine -- decoupler's default (250,000)
+    # causes a multi-GB-per-batch dense conversion that can appear to hang.
+    #
+    # tmin=MIN_GENES_PER_MODULE (2) overrides decoupler's own default of 5,
+    # which would otherwise silently drop any module with fewer than 5
+    # matched genes -- e.g. `alternative` (4 genes) -- before scoring even
+    # starts, and without raising an error. We already enforce our own
+    # min_genes threshold in build_net, so this just stops decoupler's
+    # stricter default from re-filtering on top of that.
     adata_raw = adata.raw.to_adata()
     adata_raw.obs = adata.obs
 
-    dc.mt.ulm(data=adata_raw, net=net, verbose=True)
+    result = dc.mt.ulm(data=adata_raw, net=net, verbose=True, bsize=50000, tmin=MIN_GENES_PER_MODULE)
+    if result is not None:
+        # decoupler drops cells with zero expression across every matched
+        # gene in this module and returns a new, smaller AnnData rather
+        # than mutating adata_raw in place -- use that returned object.
+        adata_raw = result
 
     scores = dc.pp.get_obsm(adata=adata_raw, key="score_ulm").to_df()
     scores.columns = [f"{c}_score" for c in scores.columns]
+
+    # Reindex onto the full cell set: any cells decoupler dropped as "empty"
+    # get NaN here (they had literally zero expression of every gene in this
+    # module, so there's no real score to assign). At 783/1,367,561 cells
+    # (~0.06%), this is negligible but worth noting in your methods --
+    # dominant_pathway/composite scores will be NaN for these specific cells.
+    scores = scores.reindex(adata.obs_names)
     adata.obs[scores.columns] = scores.values
     return scores.columns.tolist()
 
@@ -126,11 +148,18 @@ def score_modules_ulm(adata, net):
 def zscore_columns(adata, cols, suffix="_z"):
     # Places modules built from gene sets of different sizes (n=4 to n=10)
     # on a comparable scale before they are combined in any composite metric.
+    #
+    # Uses nan-aware mean/std: ~783 cells with zero expression across every
+    # matched gene in a module come back as NaN from decoupler (see
+    # score_modules_ulm), and plain np.mean/np.std would propagate that NaN
+    # into every cell's z-score, not just the missing ones.
     z_cols = []
     for col in cols:
         z_col = col.replace("_score", suffix)
-        vals = adata.obs[col].to_numpy()
-        adata.obs[z_col] = (vals - vals.mean()) / vals.std(ddof=0)
+        vals = adata.obs[col].to_numpy(dtype=float)
+        mean = np.nanmean(vals)
+        std = np.nanstd(vals, ddof=0)
+        adata.obs[z_col] = (vals - mean) / std
         z_cols.append(z_col)
     return z_cols
 
@@ -208,13 +237,19 @@ score_cols_to_check = program_z_cols + descriptive_z_cols + [
     "production_score", "response_score", "activation_index", "net_complement_load"
 ]
 
+# NOTE ON MISSINGNESS: ~783 cells (see score_modules_ulm) have NaN for any
+# module they had zero expression in. spearmanr/kruskal default to
+# nan_policy="propagate", which returns NaN for the ENTIRE statistic if even
+# one paired value is missing -- not just those rows. nan_policy="omit"
+# (spearmanr) and explicit .dropna() (kruskal) restrict each test to cells
+# with a valid score, rather than discarding the whole column.
 confound_rows = []
 for score_col in score_cols_to_check:
     for cov in CONTINUOUS_COVARIATES:
         if cov not in adata.obs.columns:
             print(f"Skipping missing covariate column: {cov}")
             continue
-        rho, p = spearmanr(adata.obs[score_col], adata.obs[cov])
+        rho, p = spearmanr(adata.obs[score_col], adata.obs[cov], nan_policy="omit")
         confound_rows.append({"score": score_col, "covariate": cov, "type": "continuous", "spearman_rho": rho, "p_value": p})
 
 confound_continuous = pd.DataFrame(confound_rows)
@@ -228,8 +263,8 @@ for score_col in score_cols_to_check:
         if cov not in adata.obs.columns:
             print(f"Skipping missing covariate column: {cov}")
             continue
-        groups = [g[score_col].to_numpy() for _, g in adata.obs.groupby(cov, observed=True)]
-        groups = [g for g in groups if len(g) > 0]
+        groups = [g[score_col].dropna().to_numpy() for _, g in adata.obs.groupby(cov, observed=True)]
+        groups = [g for g in groups if len(g) > 1]  # kruskal needs >1 value per group; skip empty/singleton groups after dropping NaN
         if len(groups) < 2:
             continue
         stat, p = kruskal(*groups)
