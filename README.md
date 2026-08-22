@@ -9,7 +9,7 @@
 For maximum reproducibility, we recommend using the included pixi environment. To install pixi, follow the instructions [here](https://pixi.prefix.dev/latest/).
 
 ## Hardware
-The analysis was performed on a 16" M1 Max MacBook Pro with 64GB RAM. Scripts have not been validated for use on other hardware.
+The analysis was performed on a 16" M1 Max MacBook Pro with 64GB RAM. Scripts have not been validated for use on any other hardware.
 
 ## Script organization
 These scripts are organized into stages, with each stage corresponding to a different processing step.
@@ -25,3 +25,10 @@ These scripts are organized into stages, with each stage corresponding to a diff
 #### Pseudobulk differential expression
 - `03a_pseudobulk-de.py`
 - `03b_pydeseq2-plot.py`
+
+#### TODO -- Trajectory analysis
+> Run trajectory analysis on scVI latent space?
+
+> Run trajectory analysis on scRNA-seq data?
+- `04a_trajectory.py`
+- `04b_trajectory-plot.py`
