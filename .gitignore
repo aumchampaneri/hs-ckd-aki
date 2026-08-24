@@ -27,3 +27,4 @@ outputs/eGFR_correlation/
 .ipynb_checkpoints/
 outputs/qc/decontx_batches/
 outputs/scvi/complement_scores_obs.parquet
+outputs/scvi/violin_full_dataset_program_scores_by_disease.svg
