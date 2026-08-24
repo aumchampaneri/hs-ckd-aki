@@ -11,7 +11,8 @@ scripts/cache/
 *.ipynb
 
 # Specfic files too large to commit
-outputs/plots/scvi/violin_full_dataset_program_scores_by_disease.svg
+outputs/scvi/complement_scores_obs.parquet
+outputs/scvi/violin_full_dataset_program_scores_by_disease.svg
 
 # Large folders
 # data/ is too large to commit - use 01a_download.py to create files
@@ -26,5 +27,3 @@ outputs/plots/pseudobulk_de
 outputs/eGFR_correlation/
 .ipynb_checkpoints/
 outputs/qc/decontx_batches/
-outputs/scvi/complement_scores_obs.parquet
-outputs/scvi/violin_full_dataset_program_scores_by_disease.svg
