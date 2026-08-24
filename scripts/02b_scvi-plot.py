@@ -7,7 +7,7 @@ from pathlib import Path
 
 PROJECT_DIR = Path.cwd().parent
 
-OUTPUT_DIR = PROJECT_DIR / "outputs/plots/scvi/"
+OUTPUT_DIR = PROJECT_DIR / "outputs/scvi/"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 DATA_DIR = PROJECT_DIR / "data/"
@@ -129,7 +129,7 @@ def score_modules_ulm(adata, net):
     if result is not None:
         # decoupler drops cells with zero expression across every matched
         # gene in this module and returns a new, smaller AnnData rather
-        # than mutating adata_raw in place; use that returned object.
+        # than mutating adata_raw in place -- use that returned object.
         adata_raw = result
 
     scores = dc.pp.get_obsm(adata=adata_raw, key="score_ulm").to_df()
@@ -138,8 +138,8 @@ def score_modules_ulm(adata, net):
     # Reindex onto the full cell set: any cells decoupler dropped as "empty"
     # get NaN here (they had literally zero expression of every gene in this
     # module, so there's no real score to assign). At 783/1,367,561 cells
-    # (~0.06%), this is negligible but worth noting.
-    # dominant_pathway/composite scores will be NaN for them
+    # (~0.06%), this is negligible but worth noting in your methods --
+    # dominant_pathway/composite scores will be NaN for these specific cells.
     scores = scores.reindex(adata.obs_names)
     adata.obs[scores.columns] = scores.values
     return scores.columns.tolist()
@@ -211,77 +211,6 @@ composite_cols = [
 ]
 adata.obs[program_z_cols + descriptive_z_cols + composite_cols].head()
 
-# %% CONFOUND ANALYSIS: are scores driven by technical covariates?
-####
-# Reviewer request: demonstrate module scores are not primarily driven by
-# library size, gene-detection depth, mitochondrial fraction, modality, or
-# batch, rather than assuming ULM/z-scoring resolves this on its own.
-#
-# NOTE ON SAMPLE SIZE: at ~1.4M cells, essentially every correlation will be
-# "statistically significant" (p < 0.05) regardless of practical relevance.
-# Report and interpret the effect size (rho, eta) here, not the p-value.
-#
-# NOTE ON INTERPRETATION: a nonzero correlation with e.g. nCount_RNA is not
-# automatically a confound -- cell types/disease states that biologically
-# differ in transcriptional output will also differ in library size. This
-# analysis flags candidates for concern; ruling a correlation in or out as
-# artifactual requires checking whether it persists within cell type/disease
-# strata (see partial-correlation note at the end of this section).
-from scipy.stats import spearmanr, kruskal
-
-# Adjust to your actual obs column names
-CONTINUOUS_COVARIATES = ["nCount_RNA", "nFeature_RNA", "percent.mt"]
-CATEGORICAL_COVARIATES = ["experiment_id", "donor_id", "suspension_type"]  # suspension_type ~ modality (cell vs nucleus); rename if your schema differs
-
-score_cols_to_check = program_z_cols + descriptive_z_cols + [
-    "production_score", "response_score", "activation_index", "net_complement_load"
-]
-
-# NOTE ON MISSINGNESS: ~783 cells (see score_modules_ulm) have NaN for any
-# module they had zero expression in. spearmanr/kruskal default to
-# nan_policy="propagate", which returns NaN for the ENTIRE statistic if even
-# one paired value is missing; not just those rows. nan_policy="omit"
-# (spearmanr) and explicit .dropna() (kruskal) restrict each test to cells
-# with a valid score, rather than discarding the whole column.
-confound_rows = []
-for score_col in score_cols_to_check:
-    for cov in CONTINUOUS_COVARIATES:
-        if cov not in adata.obs.columns:
-            print(f"Skipping missing covariate column: {cov}")
-            continue
-        rho, p = spearmanr(adata.obs[score_col], adata.obs[cov], nan_policy="omit")
-        confound_rows.append({"score": score_col, "covariate": cov, "type": "continuous", "spearman_rho": rho, "p_value": p})
-
-confound_continuous = pd.DataFrame(confound_rows)
-print("Correlation of module/composite scores with continuous technical covariates (sorted by |rho|):")
-print(confound_continuous.sort_values("spearman_rho", key=lambda s: s.abs(), ascending=False).to_string(index=False))
-confound_continuous.to_csv(OUTPUT_DIR / "confound_correlations_continuous.csv", index=False)
-
-confound_cat_rows = []
-for score_col in score_cols_to_check:
-    for cov in CATEGORICAL_COVARIATES:
-        if cov not in adata.obs.columns:
-            print(f"Skipping missing covariate column: {cov}")
-            continue
-        groups = [g[score_col].dropna().to_numpy() for _, g in adata.obs.groupby(cov, observed=True)]
-        groups = [g for g in groups if len(g) > 1]  # kruskal needs >1 value per group; skip empty/singleton groups after dropping NaN
-        if len(groups) < 2:
-            continue
-        stat, p = kruskal(*groups)
-        # eta-squared approximation for Kruskal-Wallis: (H - k + 1) / (n - k)
-        n_total = sum(len(g) for g in groups)
-        k = len(groups)
-        eta_sq = max((stat - k + 1) / (n_total - k), 0)
-        confound_cat_rows.append({
-            "score": score_col, "covariate": cov, "type": "categorical",
-            "kruskal_H": stat, "eta_squared_approx": eta_sq, "p_value": p, "n_groups": k,
-        })
-
-confound_categorical = pd.DataFrame(confound_cat_rows)
-print("Association of module/composite scores with categorical technical covariates (sorted by eta^2):")
-print(confound_categorical.sort_values("eta_squared_approx", ascending=False).to_string(index=False))
-confound_categorical.to_csv(OUTPUT_DIR / "confound_associations_categorical.csv", index=False)
-
 # %% PLOT COMPLEMENT-RELATED TRANSCRIPTIONAL PROGRAM SCORES
 sc.pl.umap(adata, color="Class", save="_full_dataset_Class.svg", show=False)
 sc.pl.umap(adata, color="SubclassLevel1", save="_full_dataset_SubclassLevel1.svg", show=False)
@@ -323,3 +252,7 @@ gene_resolution_log = pd.DataFrame([
 ])
 gene_resolution_log.to_csv(OUTPUT_DIR / "complement_module_gene_resolution.csv", index=False)
 gene_resolution_log
+
+# %% persist scored obs for downstream analyses (avoids re-running ~15min ULM fits)
+adata.obs.to_parquet(OUTPUT_DIR / "complement_scores_obs.parquet")
+print(f"Saved scored obs to {OUTPUT_DIR / 'complement_scores_obs.parquet'}")
