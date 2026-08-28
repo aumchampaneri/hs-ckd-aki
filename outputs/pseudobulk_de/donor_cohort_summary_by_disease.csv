@@ -1,0 +1,4 @@
+disease_group,n_donors,n_cells_total,assay_platform_n_missing,sex_n_missing,diabetes_history_n_missing,hypertension_n_missing,race_n_missing,age_group_n_missing,egfr_group_n_missing,region_n_missing,tissue_collection_n_missing
+acute kidney injury,40,141533,0,0,6,4,0,0,4,0,0
+chronic kidney disease,95,317266,0,0,1,1,0,0,1,0,0
+normal,88,908762,0,0,15,15,0,0,16,0,0

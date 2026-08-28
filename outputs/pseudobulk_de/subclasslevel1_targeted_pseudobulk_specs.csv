@@ -1,0 +1,44 @@
+name,query,group1,group2,population,n_cells,retained_cells_after_pseudobulk_filter,n_donors_group1,n_donors_group2
+targeted_SubclassLevel1_PT_ckd_vs_normal,`SubclassLevel1` == 'PT',chronic kidney disease,normal,PT,344549,305389,93,83
+targeted_SubclassLevel1_PT_aki_vs_normal,`SubclassLevel1` == 'PT',acute kidney injury,normal,PT,344549,259635,40,83
+targeted_SubclassLevel1_PT_aki_vs_ckd,`SubclassLevel1` == 'PT',acute kidney injury,chronic kidney disease,PT,344549,123940,40,93
+targeted_SubclassLevel1_TAL_ckd_vs_normal,`SubclassLevel1` == 'TAL',chronic kidney disease,normal,TAL,326433,296772,93,86
+targeted_SubclassLevel1_TAL_aki_vs_normal,`SubclassLevel1` == 'TAL',acute kidney injury,normal,TAL,326433,250599,38,86
+targeted_SubclassLevel1_TAL_aki_vs_ckd,`SubclassLevel1` == 'TAL',acute kidney injury,chronic kidney disease,TAL,326433,105381,38,93
+targeted_SubclassLevel1_PC_ckd_vs_normal,`SubclassLevel1` == 'PC',chronic kidney disease,normal,PC,138400,127493,86,86
+targeted_SubclassLevel1_PC_aki_vs_normal,`SubclassLevel1` == 'PC',acute kidney injury,normal,PC,138400,113495,35,86
+targeted_SubclassLevel1_PC_aki_vs_ckd,`SubclassLevel1` == 'PC',acute kidney injury,chronic kidney disease,PC,138400,35436,35,86
+targeted_SubclassLevel1_EC_ckd_vs_normal,`SubclassLevel1` == 'EC',chronic kidney disease,normal,EC,83311,75189,84,86
+targeted_SubclassLevel1_EC_aki_vs_normal,`SubclassLevel1` == 'EC',acute kidney injury,normal,EC,83311,65170,32,86
+targeted_SubclassLevel1_EC_aki_vs_ckd,`SubclassLevel1` == 'EC',acute kidney injury,chronic kidney disease,EC,83311,25693,32,84
+targeted_SubclassLevel1_FIB_ckd_vs_normal,`SubclassLevel1` == 'FIB',chronic kidney disease,normal,FIB,80914,72263,82,81
+targeted_SubclassLevel1_FIB_aki_vs_normal,`SubclassLevel1` == 'FIB',acute kidney injury,normal,FIB,80914,63294,35,81
+targeted_SubclassLevel1_FIB_aki_vs_ckd,`SubclassLevel1` == 'FIB',acute kidney injury,chronic kidney disease,FIB,80914,25625,35,82
+targeted_SubclassLevel1_IC_ckd_vs_normal,`SubclassLevel1` == 'IC',chronic kidney disease,normal,IC,78963,71475,84,85
+targeted_SubclassLevel1_IC_aki_vs_normal,`SubclassLevel1` == 'IC',acute kidney injury,normal,IC,78963,58982,36,85
+targeted_SubclassLevel1_IC_aki_vs_ckd,`SubclassLevel1` == 'IC',acute kidney injury,chronic kidney disease,IC,78963,27143,36,84
+targeted_SubclassLevel1_DTL_ckd_vs_normal,`SubclassLevel1` == 'DTL',chronic kidney disease,normal,DTL,71138,64506,42,64
+targeted_SubclassLevel1_DTL_aki_vs_normal,`SubclassLevel1` == 'DTL',acute kidney injury,normal,DTL,71138,59178,17,64
+targeted_SubclassLevel1_DTL_aki_vs_ckd,`SubclassLevel1` == 'DTL',acute kidney injury,chronic kidney disease,DTL,71138,17072,17,42
+targeted_SubclassLevel1_DCT_ckd_vs_normal,`SubclassLevel1` == 'DCT',chronic kidney disease,normal,DCT,65491,58536,72,68
+targeted_SubclassLevel1_DCT_aki_vs_normal,`SubclassLevel1` == 'DCT',acute kidney injury,normal,DCT,65491,49979,34,68
+targeted_SubclassLevel1_DCT_aki_vs_ckd,`SubclassLevel1` == 'DCT',acute kidney injury,chronic kidney disease,DCT,65491,21547,34,72
+targeted_SubclassLevel1_Myeloid_ckd_vs_normal,`SubclassLevel1` == 'Myeloid',chronic kidney disease,normal,Myeloid,37940,29815,76,63
+targeted_SubclassLevel1_Myeloid_aki_vs_normal,`SubclassLevel1` == 'Myeloid',acute kidney injury,normal,Myeloid,37940,24486,38,63
+targeted_SubclassLevel1_Myeloid_aki_vs_ckd,`SubclassLevel1` == 'Myeloid',acute kidney injury,chronic kidney disease,Myeloid,37940,20591,38,76
+targeted_SubclassLevel1_CNT_ckd_vs_normal,`SubclassLevel1` == 'CNT',chronic kidney disease,normal,CNT,36938,32649,63,68
+targeted_SubclassLevel1_CNT_aki_vs_normal,`SubclassLevel1` == 'CNT',acute kidney injury,normal,CNT,36938,28120,28,68
+targeted_SubclassLevel1_CNT_aki_vs_ckd,`SubclassLevel1` == 'CNT',acute kidney injury,chronic kidney disease,CNT,36938,11749,28,63
+targeted_SubclassLevel1_Lymphoid_ckd_vs_normal,`SubclassLevel1` == 'Lymphoid',chronic kidney disease,normal,Lymphoid,33456,25568,66,54
+targeted_SubclassLevel1_Lymphoid_aki_vs_normal,`SubclassLevel1` == 'Lymphoid',acute kidney injury,normal,Lymphoid,33456,19451,35,54
+targeted_SubclassLevel1_Lymphoid_aki_vs_ckd,`SubclassLevel1` == 'Lymphoid',acute kidney injury,chronic kidney disease,Lymphoid,33456,20667,35,66
+targeted_SubclassLevel1_VSM_P_ckd_vs_normal,`SubclassLevel1` == 'VSM/P',chronic kidney disease,normal,VSM/P,20048,17718,61,70
+targeted_SubclassLevel1_VSM_P_aki_vs_normal,`SubclassLevel1` == 'VSM/P',acute kidney injury,normal,VSM/P,20048,14573,15,70
+targeted_SubclassLevel1_VSM_P_aki_vs_ckd,`SubclassLevel1` == 'VSM/P',acute kidney injury,chronic kidney disease,VSM/P,20048,6143,15,61
+targeted_SubclassLevel1_POD_ckd_vs_normal,`SubclassLevel1` == 'POD',chronic kidney disease,normal,POD,15907,13392,51,59
+targeted_SubclassLevel1_POD_aki_vs_normal,`SubclassLevel1` == 'POD',acute kidney injury,normal,POD,15907,10832,19,59
+targeted_SubclassLevel1_POD_aki_vs_ckd,`SubclassLevel1` == 'POD',acute kidney injury,chronic kidney disease,POD,15907,6052,19,51
+targeted_SubclassLevel1_ATL_ckd_vs_normal,`SubclassLevel1` == 'ATL',chronic kidney disease,normal,ATL,14288,12603,10,29
+targeted_SubclassLevel1_PEC_ckd_vs_normal,`SubclassLevel1` == 'PEC',chronic kidney disease,normal,PEC,13659,11146,45,54
+targeted_SubclassLevel1_PEC_aki_vs_normal,`SubclassLevel1` == 'PEC',acute kidney injury,normal,PEC,13659,10134,22,54
+targeted_SubclassLevel1_PEC_aki_vs_ckd,`SubclassLevel1` == 'PEC',acute kidney injury,chronic kidney disease,PEC,13659,4260,22,45

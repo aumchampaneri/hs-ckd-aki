@@ -1,0 +1,8 @@
+population,comparison_id,reason,n_cells,retained_cells,n_donors_group1,n_donors_group2
+ATL,aki_vs_normal,too_few_pseudobulk_donors_after_cell_filter,14288,12946.0,1.0,29.0
+ATL,aki_vs_ckd,too_few_pseudobulk_donors_after_cell_filter,14288,2075.0,1.0,10.0
+PapE,ckd_vs_normal,too_few_pseudobulk_donors_after_cell_filter,5517,5205.0,1.0,21.0
+PapE,aki_vs_normal,too_few_pseudobulk_donors_after_cell_filter,5517,5168.0,0.0,21.0
+PapE,aki_vs_ckd,too_few_pseudobulk_donors_after_cell_filter,5517,37.0,0.0,1.0
+NEU,,too_few_cells,443,,,
+Ad,,too_few_cells,166,,,

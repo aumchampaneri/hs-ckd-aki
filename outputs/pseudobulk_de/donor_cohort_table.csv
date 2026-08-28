@@ -1,0 +1,224 @@
+donor_id,disease,assay,sex,diabetes_history_clean,hypertension_clean,Race_grouped,Age_grouped,egfr_grouped,region_grouped,TissueCollection_grouped,n_cells_total
+18-142,normal,10x 3' v3,female,,,Non_White,60+,,Cortex_containing,Surgical,6928
+18-162,normal,10x 3' v3,female,,,Non_White,60+,,Cortex_containing,Surgical,4676
+18-312,normal,10x 3' v3,male,,,Non_White,60+,,Cortex_containing,Surgical,7721
+21-015,normal,10x multiome,female,,,White,40-59,,Cortex_containing,Surgical,12958
+21-016,normal,10x multiome,male,,,White,40-59,,Cortex_containing,Surgical,2791
+21-019,normal,10x 3' v3,male,,,White,40-59,,Cortex_containing,Surgical,20972
+21-020,normal,10x 3' v3,male,,,White,60+,,Cortex_containing,Surgical,27658
+21-021,normal,10x multiome,male,,,Non_White,60+,,Cortex_containing,Surgical,2018
+27-10039,chronic kidney disease,10x 3' v3,female,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,3486
+27-10041,chronic kidney disease,10x 3' v3,female,Yes,Yes,Non_White,60+,>=60,Cortex_containing,Biopsy,4293
+27-10043,chronic kidney disease,10x 3' v3,female,Yes,Yes,White,40-59,>=60,Cortex_containing,Biopsy,4190
+27-10066,chronic kidney disease,10x multiome,female,Yes,Yes,Non_White,40-59,>=60,Cortex_containing,Biopsy,639
+27-10067,chronic kidney disease,10x multiome,male,Yes,Yes,White,<40,<60,Cortex_containing,Biopsy,1465
+27-10074,chronic kidney disease,10x 3' v3,female,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,3551
+27-10088,chronic kidney disease,10x 3' v3,female,Yes,Yes,White,<40,>=60,Cortex_containing,Biopsy,4528
+27-10089,chronic kidney disease,10x 3' v3,male,Yes,Yes,Non_White,40-59,>=60,Cortex_containing,Biopsy,2448
+27-10094,chronic kidney disease,10x 3' v3,female,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,1893
+27-10104,chronic kidney disease,10x 3' v3,male,Yes,Yes,Non_White,60+,>=60,Cortex_containing,Biopsy,1153
+27-10154,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,3408
+27-10163,chronic kidney disease,10x multiome,male,Yes,No,White,40-59,>=60,Cortex_containing,Biopsy,4105
+27-10165,chronic kidney disease,10x multiome,female,Yes,No,White,<40,>=60,Cortex_containing,Biopsy,5997
+27-10166,chronic kidney disease,10x multiome,male,Yes,No,White,40-59,>=60,Cortex_containing,Biopsy,3313
+27-10171,chronic kidney disease,10x multiome,male,Yes,No,White,40-59,>=60,Cortex_containing,Biopsy,5344
+27-10185,chronic kidney disease,10x multiome,male,Yes,Yes,White,40-59,>=60,Cortex_containing,Biopsy,1957
+27-10201,chronic kidney disease,10x multiome,female,Yes,Yes,White,60+,>=60,Cortex_containing,Biopsy,2855
+27-10206,chronic kidney disease,10x multiome,male,Yes,Yes,White,40-59,>=60,Cortex_containing,Biopsy,4592
+27-10207,chronic kidney disease,10x multiome,female,Yes,Yes,White,40-59,>=60,Cortex_containing,Biopsy,1367
+27-10231,chronic kidney disease,10x multiome,female,Yes,Yes,Non_White,60+,>=60,Cortex_containing,Biopsy,2385
+28-10051,chronic kidney disease,10x 3' v3,male,Yes,No,White,60+,<60,Cortex_containing,Biopsy,3405
+28-10109,chronic kidney disease,10x 3' v3,male,Yes,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,7667
+28-11515,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,672
+28-12178,chronic kidney disease,10x 3' v3,male,Yes,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,529
+28-12265,chronic kidney disease,10x multiome,female,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,3314
+28-12372,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,3317
+28-12412,chronic kidney disease,10x multiome,female,No,Yes,Non_White,40-59,>=60,Cortex_containing,Biopsy,4849
+28-12510,chronic kidney disease,10x 3' v3,male,No,Yes,White,40-59,<60,Cortex_containing,Biopsy,113
+28-12546,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,569
+28-12558,chronic kidney disease,10x multiome,female,No,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,6490
+28-12579,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,5973
+29-10006,chronic kidney disease,10x 3' v3,female,Yes,Yes,Non_White,60+,>=60,Cortex_containing,Biopsy,297
+29-10008,chronic kidney disease,10x 3' v3,female,No,Yes,White,60+,<60,Cortex_containing,Biopsy,3301
+29-10010,chronic kidney disease,10x 3' v3,male,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,358
+29-10011,chronic kidney disease,10x 3' v3,female,Yes,Yes,White,<40,<60,Cortex_containing,Biopsy,3662
+29-10012,chronic kidney disease,10x 3' v3,female,Yes,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,4864
+29-10013,chronic kidney disease,10x 3' v3,female,Yes,Yes,Non_White,60+,>=60,Cortex_containing,Biopsy,1472
+29-10016,chronic kidney disease,10x 3' v3,female,Yes,Yes,White,<40,>=60,Cortex_containing,Biopsy,6759
+29-10276,chronic kidney disease,10x 3' v3,female,Yes,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,2775
+29-10277,chronic kidney disease,10x 3' v3,male,Yes,Yes,White,40-59,>=60,Cortex_containing,Biopsy,4722
+29-10280,chronic kidney disease,10x 3' v3,male,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,1286
+29-10380,chronic kidney disease,10x 3' v3,male,No,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,4042
+29-10393,chronic kidney disease,10x 3' v3,male,No,Yes,White,40-59,>=60,Medulla_or_other,Biopsy,5146
+29-10395,chronic kidney disease,10x multiome,male,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,1051
+29-10399,chronic kidney disease,10x multiome,female,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,2177
+29-10400,chronic kidney disease,10x 3' v3,female,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,3302
+29-10401,chronic kidney disease,10x 3' v3,female,No,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,196
+29-10402,chronic kidney disease,10x multiome,male,Yes,Yes,White,40-59,<60,Cortex_containing,Biopsy,5512
+29-10404,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,4453
+29-10406,chronic kidney disease,10x 3' v3,male,Yes,Yes,Non_White,60+,<60,Medulla_or_other,Biopsy,4781
+29-10410,chronic kidney disease,10x multiome,male,Yes,Yes,White,40-59,<60,Cortex_containing,Biopsy,2785
+29-10422,chronic kidney disease,10x multiome,male,Yes,Yes,White,40-59,<60,Cortex_containing,Biopsy,1482
+29-10439,chronic kidney disease,10x multiome,male,Yes,Yes,White,40-59,>=60,Cortex_containing,Biopsy,505
+29-10662,chronic kidney disease,10x multiome,male,No,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,5816
+30-10018,acute kidney injury,10x 3' v3,male,Yes,Yes,Non_White,<40,>=60,Cortex_containing,Biopsy,1891
+30-10034,acute kidney injury,10x 3' v3,female,Yes,Yes,Non_White,60+,>=60,Cortex_containing,Biopsy,4819
+30-10044,acute kidney injury,10x 3' v3,female,No,No,White,<40,>=60,Medulla_or_other,Biopsy,2375
+30-10125,acute kidney injury,10x multiome,male,No,No,Non_White,40-59,>=60,Cortex_containing,Biopsy,2670
+30-10631,acute kidney injury,10x 3' v3,male,No,Yes,Non_White,40-59,>=60,Cortex_containing,Biopsy,9503
+30-10868,acute kidney injury,10x multiome,male,Yes,No,White,40-59,>=60,Cortex_containing,Biopsy,3975
+30-10929,acute kidney injury,10x 3' v3,male,No,Yes,Non_White,<40,>=60,Cortex_containing,Biopsy,3396
+30-11051,acute kidney injury,10x multiome,male,Yes,No,White,<40,>=60,Cortex_containing,Biopsy,932
+30-11080,acute kidney injury,10x multiome,male,No,No,White,40-59,>=60,Cortex_containing,Biopsy,1791
+30-11081,acute kidney injury,10x multiome,female,,Yes,White,60+,>=60,Cortex_containing,Biopsy,2192
+30-11084,acute kidney injury,10x multiome,female,No,No,White,40-59,<60,Cortex_containing,Biopsy,4956
+31-10000,chronic kidney disease,10x 3' v3,male,No,Yes,White,40-59,<60,Cortex_containing,Biopsy,3504
+31-10001,chronic kidney disease,10x 3' v3,male,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,4905
+31-10006,chronic kidney disease,10x 3' v3,male,No,Yes,White,60+,<60,Medulla_or_other,Biopsy,7307
+31-10013,chronic kidney disease,10x 3' v3,male,Yes,Yes,White,60+,<60,Medulla_or_other,Biopsy,4938
+31-10035,chronic kidney disease,10x 3' v3,female,Yes,Yes,White,60+,>=60,Cortex_containing,Biopsy,6129
+31-10061,chronic kidney disease,10x 3' v3,male,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,3273
+31-10063,chronic kidney disease,10x 3' v3,female,No,Yes,White,60+,<60,Cortex_containing,Biopsy,6173
+31-10078,chronic kidney disease,10x multiome,female,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,1822
+31-10081,chronic kidney disease,10x 3' v3,female,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,1113
+31-10090,chronic kidney disease,10x multiome,female,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,3250
+31-10091,chronic kidney disease,10x 3' v3,male,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,375
+31-10100,chronic kidney disease,10x multiome,female,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,5018
+31-10105,chronic kidney disease,10x 3' v3,male,Yes,Yes,Non_White,<40,<60,Cortex_containing,Biopsy,714
+31-10169,chronic kidney disease,10x multiome,male,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,149
+31-10177,chronic kidney disease,10x 3' v3,male,No,Yes,White,60+,<60,Cortex_containing,Biopsy,1946
+31-10210,chronic kidney disease,10x 3' v3,female,No,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,5446
+31-10221,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,4887
+31-10236,chronic kidney disease,10x multiome,female,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,7217
+31-10322,chronic kidney disease,10x multiome,female,Yes,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,3495
+31-10340,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,153
+32-2,acute kidney injury,10x 3' v3,male,Yes,Yes,White,60+,>=60,Cortex_containing,Biopsy,901
+32-10003,acute kidney injury,10x 3' v3,male,No,No,White,<40,>=60,Cortex_containing,Biopsy,6141
+32-10034,acute kidney injury,10x 3' v3,male,Yes,No,White,60+,>=60,Cortex_containing,Biopsy,3402
+32-10074,acute kidney injury,10x multiome,male,,No,White,60+,>=60,Cortex_containing,Biopsy,536
+32-10205,acute kidney injury,10x 3' v3,male,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,4351
+32-10333,acute kidney injury,10x 3' v3,male,No,No,Non_White,40-59,>=60,Cortex_containing,Biopsy,1312
+32-10346,acute kidney injury,10x multiome,male,Yes,No,Non_White,40-59,>=60,Cortex_containing,Biopsy,80
+32-10419,acute kidney injury,10x multiome,female,No,No,Non_White,40-59,>=60,Cortex_containing,Biopsy,2172
+32-10456,acute kidney injury,10x multiome,male,No,Yes,Non_White,<40,>=60,Medulla_or_other,Biopsy,1628
+32-10458,acute kidney injury,10x multiome,female,No,No,White,40-59,>=60,Cortex_containing,Biopsy,5299
+33-10005,acute kidney injury,10x 3' v3,male,No,Yes,White,60+,>=60,Cortex_containing,Biopsy,3686
+33-10006,acute kidney injury,10x 3' v3,male,No,No,White,<40,>=60,Cortex_containing,Biopsy,4483
+33-10331,acute kidney injury,10x multiome,female,No,No,Non_White,<40,>=60,Cortex_containing,Biopsy,3621
+33-10376,acute kidney injury,10x multiome,male,No,Yes,White,60+,>=60,Cortex_containing,Biopsy,2110
+34-10050,acute kidney injury,10x 3' v3,female,Yes,No,White,60+,<60,Cortex_containing,Biopsy,731
+34-10184,acute kidney injury,10x 3' v3,female,No,No,White,40-59,>=60,Cortex_containing,Biopsy,5036
+34-10187,acute kidney injury,10x 3' v3,male,No,No,Non_White,<40,>=60,Cortex_containing,Biopsy,3651
+34-10209,acute kidney injury,10x 3' v3,male,Yes,Yes,White,40-59,>=60,Cortex_containing,Biopsy,2508
+34-10240,acute kidney injury,10x multiome,female,No,No,White,40-59,>=60,Medulla_or_other,Biopsy,1227
+34-10306,acute kidney injury,10x multiome,male,No,No,White,<40,>=60,Cortex_containing,Biopsy,5506
+34-10331,acute kidney injury,10x multiome,male,No,Yes,White,<40,>=60,Cortex_containing,Biopsy,339
+34-10393,acute kidney injury,10x multiome,male,No,No,White,<40,>=60,Cortex_containing,Biopsy,5262
+34-10579,acute kidney injury,10x multiome,female,No,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,618
+163-5,normal,10x 3' v3,male,No,No,White,<40,,Medulla_or_other,Biopsy,77
+163-6,normal,10x 3' v3,female,,,White,40-59,,Medulla_or_other,Biopsy,229
+164-1,normal,10x 3' v3,male,No,No,White,40-59,>=60,Cortex_containing,Surgical,4616
+164-3,normal,10x 3' v3,male,No,No,White,<40,>=60,Cortex_containing,Surgical,4406
+164-5,normal,10x 3' v3,female,No,No,White,<40,>=60,Cortex_containing,Surgical,4098
+164-6,normal,10x 3' v3,female,No,No,White,<40,>=60,Cortex_containing,Surgical,4887
+164-7,normal,10x 3' v3,female,No,Yes,White,40-59,>=60,Cortex_containing,Surgical,2931
+164-8,normal,10x 3' v3,male,No,No,White,<40,>=60,Cortex_containing,Surgical,1155
+164-10,normal,10x 3' v3,female,No,No,Non_White,40-59,>=60,Cortex_containing,Surgical,12656
+164-11,normal,10x multiome,female,No,No,White,40-59,>=60,Cortex_containing,Surgical,6331
+164-12,normal,10x multiome,female,No,No,White,<40,>=60,Cortex_containing,Surgical,6625
+164-13,normal,10x multiome,female,No,No,White,40-59,>=60,Cortex_containing,Surgical,5797
+164-14,normal,10x multiome,male,No,No,White,40-59,>=60,Cortex_containing,Surgical,4971
+164-15,normal,10x multiome,female,No,Yes,White,40-59,>=60,Medulla_or_other,Surgical,8138
+164-17,normal,10x multiome,female,No,No,White,<40,>=60,Cortex_containing,Surgical,4232
+164-18,normal,10x multiome,male,No,No,White,40-59,>=60,Cortex_containing,Surgical,7763
+164-20,normal,10x multiome,male,No,Yes,White,<40,>=60,Cortex_containing,Surgical,951
+165-7,normal,10x 3' v3,male,No,No,Non_White,40-59,>=60,Cortex_containing,Surgical,4090
+165-9,normal,10x 3' v3,female,No,No,White,<40,>=60,Medulla_or_other,Surgical,4252
+165-10,normal,10x 3' v3,female,No,No,White,40-59,>=60,Medulla_or_other,Surgical,5775
+165-11,normal,10x multiome,female,Yes,No,White,40-59,>=60,Cortex_containing,Surgical,4469
+165-13,normal,10x multiome,female,No,No,Non_White,40-59,>=60,Cortex_containing,Surgical,2944
+165-14,normal,10x multiome,female,No,No,Non_White,40-59,>=60,Medulla_or_other,Surgical,1301
+165-15,normal,10x multiome,male,No,No,White,40-59,>=60,Cortex_containing,Surgical,814
+933-10003,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,2109
+933-10010,chronic kidney disease,10x multiome,male,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,588
+934-10016,chronic kidney disease,10x multiome,male,No,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,5774
+934-10022,chronic kidney disease,10x multiome,male,No,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,4245
+934-10023,chronic kidney disease,10x multiome,male,Yes,Yes,Non_White,60+,<60,Cortex_containing,Biopsy,4153
+934-10032,chronic kidney disease,10x multiome,male,No,Yes,White,40-59,<60,Cortex_containing,Biopsy,4960
+936-10002,chronic kidney disease,10x multiome,female,Yes,Yes,White,60+,<60,Cortex_containing,Biopsy,5771
+936-10003,chronic kidney disease,10x multiome,female,Yes,Yes,Non_White,60+,>=60,Medulla_or_other,Biopsy,1525
+936-10006,chronic kidney disease,10x multiome,female,Yes,Yes,Non_White,40-59,<60,Cortex_containing,Biopsy,5906
+3374,normal,10x multiome,female,,,Non_White,40-59,,Medulla_or_other,Surgical,4152
+3477,chronic kidney disease,10x 3' v3,female,Yes,Yes,White,60+,<60,Cortex_containing,Surgical,1422
+3479,chronic kidney disease,10x 3' v3,male,No,Yes,White,40-59,<60,Cortex_containing,Surgical,2243
+3487,chronic kidney disease,10x 3' v3,male,Yes,No,White,60+,<60,Cortex_containing,Surgical,2498
+3490,normal,10x 3' v3,female,No,No,White,<40,>=60,Medulla_or_other,Biopsy,2096
+3499,normal,10x 3' v3,female,Yes,No,White,40-59,>=60,Medulla_or_other,Surgical,1360
+3504,normal,10x 3' v3,female,No,No,White,40-59,>=60,Medulla_or_other,Surgical,2987
+3510,normal,10x multiome,male,No,Yes,White,40-59,>=60,Cortex_containing,Surgical,10000
+3535,normal,10x 3' v3,male,No,No,White,60+,<60,Cortex_containing,Surgical,20333
+3579,normal,10x 3' v3,male,No,No,White,60+,>=60,Cortex_containing,Surgical,2752
+3593,normal,10x 3' v3,male,No,No,White,60+,>=60,Medulla_or_other,Surgical,50199
+3609,chronic kidney disease,10x multiome,female,No,Yes,Non_White,60+,>=60,Cortex_containing,Surgical,3307
+3611,normal,10x 3' v3,female,No,Yes,White,40-59,>=60,Medulla_or_other,Surgical,1519
+3612,chronic kidney disease,10x multiome,female,Yes,Yes,White,40-59,>=60,Cortex_containing,Surgical,2849
+3613,normal,10x 3' v3,female,No,No,White,40-59,,Medulla_or_other,Surgical,5969
+3619,normal,10x 3' v3,male,No,No,White,60+,>=60,Cortex_containing,Biopsy,2743
+3620,normal,10x 3' v3,female,No,No,White,40-59,>=60,Medulla_or_other,Biopsy,2247
+3621,normal,10x 3' v3,male,No,No,White,40-59,>=60,Cortex_containing,Biopsy,3196
+3622,normal,10x 3' v3,male,No,No,Non_White,<40,>=60,Cortex_containing,Biopsy,4493
+3623,normal,10x 3' v3,male,No,No,White,40-59,>=60,Cortex_containing,Biopsy,817
+3625,normal,10x 3' v3,female,No,No,White,60+,>=60,Cortex_containing,Biopsy,3033
+3626,normal,10x 3' v3,male,No,No,White,40-59,>=60,Cortex_containing,Biopsy,3605
+3627,normal,10x 3' v3,female,No,No,White,<40,>=60,Cortex_containing,Biopsy,4626
+3630,normal,10x 3' v3,female,No,No,White,40-59,>=60,Cortex_containing,Biopsy,7653
+3631,normal,10x 3' v3,female,No,No,White,40-59,>=60,Cortex_containing,Biopsy,3033
+3632,normal,10x 3' v3,male,No,No,White,<40,>=60,Medulla_or_other,Biopsy,5616
+3673,acute kidney injury,10x multiome,male,No,Yes,White,40-59,>=60,Cortex_containing,Surgical,2283
+3675,normal,10x 3' v3,male,Yes,Yes,Non_White,40-59,>=60,Medulla_or_other,Surgical,479
+3691,normal,10x 3' v3,male,No,No,White,60+,>=60,Medulla_or_other,Surgical,8155
+3693,normal,10x 3' v3,female,No,Yes,White,60+,>=60,Medulla_or_other,Surgical,8032
+3704,normal,10x multiome,male,No,Yes,White,60+,>=60,Cortex_containing,Surgical,32879
+3711,normal,10x multiome,male,No,No,White,60+,>=60,Cortex_containing,Surgical,25815
+3712,normal,10x 3' v3,male,No,Yes,White,40-59,>=60,Medulla_or_other,Surgical,32068
+3715,normal,10x 3' v3,female,No,No,White,40-59,>=60,Medulla_or_other,Surgical,7555
+3716,chronic kidney disease,10x 3' v3,female,No,Yes,Non_White,40-59,<60,Cortex_containing,Surgical,12125
+3723,normal,10x 3' v3,female,No,No,White,40-59,>=60,Cortex_containing,Surgical,46569
+3728,normal,10x 3' v3,female,No,No,Non_White,40-59,>=60,Cortex_containing,Surgical,17745
+3775,normal,10x multiome,male,No,Yes,White,40-59,>=60,Cortex_containing,Surgical,4087
+3778,normal,10x 3' v3,male,No,No,White,40-59,>=60,Cortex_containing,Surgical,46110
+3781,normal,10x multiome,female,No,Yes,White,40-59,>=60,Cortex_containing,Surgical,20075
+3782,acute kidney injury,10x multiome,male,No,No,White,<40,>=60,Cortex_containing,Surgical,21419
+3785,normal,10x multiome,female,No,Yes,White,<40,>=60,Cortex_containing,Surgical,835
+3800,normal,10x multiome,male,No,No,White,40-59,>=60,Cortex_containing,Surgical,15644
+3804,chronic kidney disease,10x multiome,male,No,Yes,Non_White,40-59,<60,Cortex_containing,Surgical,337
+3814,chronic kidney disease,10x 3' v3,male,No,Yes,White,60+,<60,Cortex_containing,Biopsy,396
+3824,normal,10x multiome,male,No,Yes,Non_White,40-59,>=60,Medulla_or_other,Surgical,13378
+3825,normal,10x multiome,female,No,Yes,White,60+,>=60,Cortex_containing,Surgical,20716
+3830,normal,10x multiome,male,No,Yes,Non_White,40-59,>=60,Cortex_containing,Surgical,2152
+3893,normal,10x multiome,female,No,Yes,White,40-59,>=60,Cortex_containing,Surgical,3227
+3898,normal,10x multiome,female,No,No,White,<40,>=60,Cortex_containing,Surgical,2309
+3900,normal,10x multiome,male,No,Yes,White,60+,>=60,Cortex_containing,Surgical,27072
+3903,chronic kidney disease,10x multiome,female,No,No,Non_White,40-59,<60,Cortex_containing,Surgical,6106
+3904,chronic kidney disease,10x multiome,female,No,No,White,60+,<60,Cortex_containing,Surgical,2188
+3907,normal,10x multiome,male,No,Yes,White,60+,<60,Cortex_containing,Surgical,20927
+3916,chronic kidney disease,10x multiome,male,No,Yes,White,60+,<60,Cortex_containing,Surgical,962
+3918,normal,10x multiome,male,,Yes,Non_White,60+,>=60,Cortex_containing,Surgical,10260
+3948,normal,10x multiome,male,No,Yes,White,40-59,>=60,Cortex_containing,Surgical,49141
+3965,normal,10x 3' v3,female,No,Yes,White,60+,>=60,Medulla_or_other,Surgical,13104
+COV-02-0002,acute kidney injury,10x 3' v3,male,,,Non_White,40-59,,Cortex_containing,Biopsy,2120
+COV-02-0010,acute kidney injury,10x 3' v3,female,,,Non_White,60+,,Cortex_containing,Biopsy,3809
+COV-02-0094,acute kidney injury,10x 3' v3,male,,,Non_White,40-59,,Cortex_containing,Biopsy,6165
+COV-02-0096,acute kidney injury,10x 3' v3,female,,,Non_White,<40,,Cortex_containing,Biopsy,2637
+D_080,normal,10x 3' v3,male,No,No,Non_White,40-59,>=60,Cortex_containing,Surgical,88307
+IU-KRP-429,normal,10x 3' v3,male,No,No,White,<40,>=60,Medulla_or_other,Biopsy,2467
+IU-KRP-430,normal,10x 3' v3,male,No,Yes,White,<40,>=60,Cortex_containing,Biopsy,6086
+IU-KRP-473,normal,10x 3' v3,male,Yes,Yes,White,40-59,>=60,Medulla_or_other,Biopsy,7115
+KPMP_101,normal,10x multiome,female,No,No,Non_White,<40,>=60,Cortex_containing,Surgical,5020
+KPMP_104,normal,10x multiome,female,Yes,No,White,60+,>=60,Cortex_containing,Surgical,4159
+KRP446,normal,10x 3' v3,male,No,,White,<40,>=60,Medulla_or_other,Biopsy,4956
+KRP460,normal,10x 3' v3,female,,,White,60+,,Cortex_containing,Biopsy,9037
+KRP461,normal,10x 3' v3,male,,,White,40-59,,Cortex_containing,Biopsy,1867
+KRP462,normal,10x 3' v3,female,,,White,60+,,Cortex_containing,Biopsy,4369
+SDKZ0001,normal,10x 3' v3,male,,,White,40-59,,Medulla_or_other,Surgical,15386
+SDKZ0024,chronic kidney disease,10x multiome,female,,,White,60+,,Medulla_or_other,Surgical,5377

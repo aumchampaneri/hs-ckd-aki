@@ -1,0 +1,16 @@
+subclasslevel1,display_label,status,available_comparisons,missing_comparisons,output_stem
+ATL,ATL - Ascending thin limb,missing_comparisons,ckd_vs_normal,aki_vs_normal;aki_vs_ckd,
+CNT,CNT - Connecting tubule,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_CNT_complement_aware_volcano_triptych
+DCT,DCT - Distal convoluted tubule,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_DCT_complement_aware_volcano_triptych
+DTL,DTL - Descending thin limb,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_DTL_complement_aware_volcano_triptych
+EC,EC - Endothelial cells,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_EC_complement_aware_volcano_triptych
+FIB,FIB - Fibroblasts / stromal fibroblasts,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_FIB_complement_aware_volcano_triptych
+IC,IC - Intercalated cells,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_IC_complement_aware_volcano_triptych
+Lymphoid,Lymphoid - Lymphoid immune cells,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_Lymphoid_complement_aware_volcano_triptych
+Myeloid,Myeloid - Myeloid immune cells,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_Myeloid_complement_aware_volcano_triptych
+PC,PC - Collecting duct principal cells,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_PC_complement_aware_volcano_triptych
+PEC,PEC - Parietal epithelial cells,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_PEC_complement_aware_volcano_triptych
+POD,POD - Podocytes,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_POD_complement_aware_volcano_triptych
+PT,PT - Proximal tubule,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_PT_complement_aware_volcano_triptych
+TAL,TAL - Thick ascending limb,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_TAL_complement_aware_volcano_triptych
+VSM_P,VSM_P - Vascular smooth muscle / pericytes,plotted,ckd_vs_normal;aki_vs_normal;aki_vs_ckd,,subclasslevel1_VSM_P_complement_aware_volcano_triptych
