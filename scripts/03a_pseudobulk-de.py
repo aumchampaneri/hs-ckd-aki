@@ -38,7 +38,38 @@ min_total_count = 20
 min_detected_donors = 3
 min_compartment_cells = 500  # minimum raw cells in a SubclassLevel1 population before attempting targeted DE
 
-# Keep covariate adjustment conservative
+# Candidate donor-level covariates for the DE design (Reviewer 2, point #3:
+# disease group may be confounded with assay modality, sex, race,
+# diabetes/hypertension, age, region, tissue source). Maps a short name ->
+# the corresponding adata.obs column. Each candidate is only added to the
+# actual DE design (`adjustment_covariates`, populated after the audit step
+# below) if it passes a crosstab-degeneracy check against disease_key -
+# a covariate with an empty or near-empty cell for some disease group would
+# make the design matrix singular or produce unstable coefficient estimates,
+# so it is reported and excluded rather than silently included.
+adjustment_covariate_candidates = {
+    "assay_platform": "assay",  # 10x 3' v3 vs 10x multiome; suspension_type
+                                 # was checked and found invariant (this whole
+                                 # cohort is single-nucleus - no sc/sn split)
+    "sex": "sex",
+    "diabetes_history": "diabetes_history_clean",
+    "hypertension": "hypertension_clean",
+    "race": "Race_grouped",
+    "age_group": "Age_grouped",
+    "egfr_group": "egfr_grouped",
+    "region": "region_grouped",
+    "tissue_collection": "TissueCollection_grouped",
+}
+
+# Minimum number of donors required in every (covariate level x disease
+# group) cell for a candidate covariate to be considered non-degenerate.
+# Below this, PyDESeq2's design matrix can become rank-deficient or produce
+# coefficients driven by a single donor.
+min_covariate_cell_donors = 3
+
+# Populated below by run_covariate_audit(); left as [] here so the script
+# still runs top-to-bottom if that cell is skipped, but every downstream
+# design formula depends on this being set by the audit before use.
 adjustment_covariates = []
 
 comparison_specs = [
@@ -189,6 +220,262 @@ for _spec in comparison_specs:
 
 
 # %%
+# COVARIATE COARSENING
+# > Reviewer 2 (#3): several candidate covariates (Race, Age, eGFR bin,
+# region, tissue collection method) have too many levels for the donor
+# pool, producing empty/near-empty cells once crossed with disease group.
+# Coarsen to clinically defensible, more balanced groupings BEFORE the
+# audit, rather than lowering the audit's minimum-cell-donors threshold to
+# force sparse categories through. Boundaries below are derived from the
+# observed level counts in this cohort (see donor_cohort_summary output)
+# and should be reviewed, not assumed correct for a different cohort.
+####
+def add_coarsened_covariates(adata):
+    obs = adata.obs
+
+    # NOTE: adata.obs columns are pandas Categorical (AnnData default),
+    # which raises TypeError if you try to assign a value that isn't
+    # already a defined category (e.g. via .where()/.mask()). Cast each
+    # source column to plain object dtype before deriving a grouped
+    # column - this also preserves true missing values as NaN, unlike
+    # .astype(str), which would turn NaN into the literal string "nan".
+    def _as_object(col):
+        return obs[col].astype(object) if col in obs else None
+
+    # diabetes_history / hypertension: "Not available" -> missing, so those
+    # donors are excluded (complete-case) from any model using the
+    # covariate, rather than being forced into a sparse third category.
+    for col in ["diabetes_history", "hypertension"]:
+        s = _as_object(col)
+        if s is not None:
+            obs[f"{col}_clean"] = s.replace({"Not available": np.nan})
+
+    # Race: collapsed further to White vs Non-White after the first-pass
+    # 3-level grouping (White/Black/Other) still had an undersized cell in
+    # the covariate audit (min 2 donors). Binary is the coarsest defensible
+    # split available in this cohort - if it still fails the audit, Race
+    # cannot be jointly modeled with disease group here and that is a
+    # reportable limitation, not something to force further.
+    s = _as_object("Race")
+    if s is not None:
+        obs["Race_grouped"] = np.where(s == "White", "White", "Non_White")
+        obs["Race_grouped"] = pd.Series(obs["Race_grouped"], index=obs.index).where(
+            s.notna(), np.nan
+        )
+
+    # Age: collapse 9 bins to 3. Boundaries chosen from the observed
+    # per-bin counts in this cohort (see the value_counts print), merging
+    # the sparse 10-19/20-29 and 80-89/90-99 tails into their neighbors.
+    s = _as_object("Age")
+    if s is not None:
+        def _age_group(val):
+            if pd.isna(val):
+                return np.nan
+            lo = int(str(val).split("-")[0])
+            if lo < 40:
+                return "<40"
+            elif lo < 60:
+                return "40-59"
+            else:
+                return "60+"
+        obs["Age_grouped"] = s.apply(_age_group)
+
+    # eGFR (binned): collapsed to the standard clinical binary cutoff
+    # (<60 vs >=60 ml/min/1.73m2, the threshold for CKD stage 3+) after the
+    # 3-bucket grouping still had an undersized cell (min 2 donors). "Not
+    # available" -> missing. ">60 ml/min/1.73m2" is an ambiguous/
+    # unspecified bin (likely used for donors recorded only as "normal"
+    # range) - placed in the >=60 bucket; confirm this assumption against
+    # your source-dataset documentation.
+    egfr_col = "Baseline eGFR (ml/min/1.73m2) (Binned)"
+    s = _as_object(egfr_col)
+    if s is not None:
+        def _egfr_group(val):
+            if pd.isna(val) or val == "Not available":
+                return np.nan
+            if val == ">60 ml/min/1.73m2":
+                return ">=60"  # ASSUMPTION - see comment above
+            lo = int(str(val).split("-")[0])
+            return "<60" if lo < 60 else ">=60"
+        obs["egfr_grouped"] = s.apply(_egfr_group)
+
+    # region: collapsed further to Cortex-containing vs not, after the
+    # first-pass 4-level grouping had a near-empty cell (min 1 donor).
+    # Merges Medulla with Other_or_unknown (Papilla + unknown region).
+    s = _as_object("region")
+    if s is not None:
+        cortex_containing = {"Cortex", "Cortex/Medulla"}
+        obs["region_grouped"] = np.where(
+            s.isin(cortex_containing), "Cortex_containing", "Medulla_or_other"
+        )
+        obs["region_grouped"] = pd.Series(obs["region_grouped"], index=obs.index).where(
+            s.notna(), np.nan
+        )
+
+    # TissueCollection: collapsed further to Biopsy vs Surgical (merging
+    # Nephrectomy and Transplant Pre-perfusion Biopsy, both organ-level
+    # procurement rather than needle sampling), after the first-pass
+    # 3-level grouping had an undersized cell (min 2 donors).
+    s = _as_object("TissueCollection")
+    if s is not None:
+        biopsy_procedures = {"Percutaneous Needle Biopsy", "Intra-operative Biopsy"}
+        obs["TissueCollection_grouped"] = np.where(
+            s.isin(biopsy_procedures), "Biopsy", "Surgical"
+        )
+        obs["TissueCollection_grouped"] = pd.Series(
+            obs["TissueCollection_grouped"], index=obs.index
+        ).where(s.notna(), np.nan)
+
+    return adata
+
+
+adata = add_coarsened_covariates(adata)
+
+
+# %%
+# DONOR-LEVEL COHORT TABLE + COVARIATE AUDIT
+# > Reviewer 1 & Reviewer 2 (#1, #3): report exact donor/cell counts per
+# disease group with demographics and missingness, and explicitly audit
+# which candidate covariates are usable in the DE design before any are
+# added - rather than asserting "covariates were audited" without showing
+# the audit. Both outputs are written to disk so they can go directly into
+# the response letter / revised Methods & Supplementary Materials.
+####
+def build_donor_cohort_table(adata, covariate_candidates):
+    """One row per donor_id. Assumes covariate columns are (or should be)
+    donor-invariant; explicitly checks that assumption rather than silently
+    taking the first observed value per donor."""
+    cols_present = {
+        short: col for short, col in covariate_candidates.items() if col in adata.obs
+    }
+    missing_cols = sorted(set(covariate_candidates) - set(cols_present))
+    if missing_cols:
+        print(
+            f"Covariate audit: candidates not found in adata.obs, skipping: {missing_cols}"
+        )
+
+    obs_cols = [donor_key, disease_key] + list(cols_present.values())
+    obs = adata.obs[obs_cols].copy()
+
+    # Donor-invariance check: flag any donor where a nominally donor-level
+    # column takes >1 distinct non-null value across its cells/nuclei. This
+    # would indicate the column is actually library- or cell-level, not
+    # donor-level, and should not be joined onto the donor pseudobulk as-is.
+    non_invariant = {}
+    for short, col in cols_present.items():
+        n_unique = obs.groupby(donor_key, observed=True)[col].nunique(dropna=True)
+        offenders = n_unique[n_unique > 1]
+        if len(offenders) > 0:
+            non_invariant[short] = offenders.index.tolist()
+    if non_invariant:
+        print(
+            "Covariate audit: WARNING - these covariates vary WITHIN at least one "
+            f"donor_id (not donor-invariant), affected donors: {non_invariant}"
+        )
+
+    donor_cell_counts = obs.groupby(donor_key, observed=True).size().rename("n_cells_total")
+    donor_level = (
+        obs.groupby(donor_key, observed=True)
+        .first()  # documented above as an approximation where non-invariance was flagged
+        .join(donor_cell_counts)
+        .reset_index()
+    )
+
+    cohort_table_path = OUTPUT_DIR / "donor_cohort_table.csv"
+    donor_level.to_csv(cohort_table_path, index=False)
+
+    # Per-disease-group summary: donor counts, cell counts, missingness per
+    # covariate - the minimum table R1/R2 ask for.
+    summary_rows = []
+    for group, sub in donor_level.groupby(disease_key, observed=True):
+        row = {
+            "disease_group": group,
+            "n_donors": len(sub),
+            "n_cells_total": int(sub["n_cells_total"].sum()),
+        }
+        for short, col in cols_present.items():
+            row[f"{short}_n_missing"] = int(sub[col].isna().sum())
+        summary_rows.append(row)
+    cohort_summary = pd.DataFrame(summary_rows)
+    cohort_summary_path = OUTPUT_DIR / "donor_cohort_summary_by_disease.csv"
+    cohort_summary.to_csv(cohort_summary_path, index=False)
+
+    print(
+        f"Cohort table: {len(donor_level)} donors -> {cohort_table_path.name}; "
+        f"per-group summary -> {cohort_summary_path.name}"
+    )
+    return donor_level, cols_present, non_invariant
+
+
+def run_covariate_audit(donor_level, cols_present, min_cell_donors=min_covariate_cell_donors):
+    """For each candidate covariate, crosstab against disease_key and flag
+    it as usable only if every observed (covariate level x disease group)
+    cell has >= min_cell_donors donors. A covariate that is empty or
+    near-empty in some disease group cannot be estimated jointly with the
+    disease effect and would otherwise silently produce a rank-deficient or
+    unstable design matrix."""
+    audit_rows = []
+    usable = []
+    for short, col in cols_present.items():
+        # Rows with a missing covariate value (e.g. diabetes_history_clean
+        # NaN from "Not available") are excluded from the crosstab entirely
+        # rather than counted as a "nan" level - those donors are simply
+        # complete-case-excluded from any model using this covariate.
+        non_missing = donor_level.dropna(subset=[col])
+        n_missing = len(donor_level) - len(non_missing)
+        ct = pd.crosstab(non_missing[col].astype(str), non_missing[disease_key].astype(str))
+        # Only check cells for the disease groups actually used in
+        # comparison_specs, since unused disease labels shouldn't block a
+        # covariate from being usable.
+        used_groups = sorted(
+            {g for spec in comparison_specs for g in (spec["group1"], spec["group2"])}
+        )
+        used_groups = [g for g in used_groups if g in ct.columns]
+        ct_used = ct[used_groups] if used_groups else ct
+        min_cell = int(ct_used.replace(0, np.nan).min().min()) if ct_used.size else 0
+        n_levels = int((donor_level[col].notna()).astype(str).nunique())
+        is_usable = bool(ct_used.size) and (ct_used.min().min() >= min_cell_donors)
+        audit_rows.append(
+            {
+                "covariate": short,
+                "column": col,
+                "n_levels": non_missing[col].astype(str).nunique(),
+                "n_donors_missing_excluded": n_missing,
+                "min_cell_donors_in_used_groups": min_cell,
+                "usable": is_usable,
+                "reason": "ok" if is_usable else "empty_or_undersized_cell_in_crosstab",
+            }
+        )
+        if is_usable:
+            usable.append(short)
+
+    audit_df = pd.DataFrame(audit_rows)
+    audit_path = OUTPUT_DIR / "covariate_audit.csv"
+    audit_df.to_csv(audit_path, index=False)
+    print(f"Covariate audit -> {audit_path.name}: usable covariates = {usable}")
+    return usable, audit_df
+
+
+_donor_cohort_table, _covariate_cols_present, _covariate_non_invariant = (
+    build_donor_cohort_table(adata, adjustment_covariate_candidates)
+)
+_usable_covariates, _covariate_audit_df = run_covariate_audit(
+    _donor_cohort_table, _covariate_cols_present
+)
+
+# Populate the design-facing list from the audit result. Covariates that
+# vary within a donor_id (see WARNING above) are additionally excluded here
+# even if they passed the crosstab check, since a per-donor "first value"
+# join would be attaching a value that isn't stably true of that donor.
+adjustment_covariates = [
+    adjustment_covariate_candidates[short]
+    for short in _usable_covariates
+    if short not in _covariate_non_invariant
+]
+print(f"adjustment_covariates set to: {adjustment_covariates}")
+
+
+# %%
 # UTILITIES & PSEUDOBULK GENERATION
 # > ADPBulk utilities to generate pseudobulks
 ####
@@ -267,10 +554,18 @@ def build_donor_pseudobulk(adata, query=None):
     if cov_cols:
         donor_cov = (
             sub.obs[[donor_key] + cov_cols]
-            .astype(str)
             .drop_duplicates(subset=[donor_key])
             .set_index(donor_key)
         )
+        # Cast non-null values to str for consistent categorical handling,
+        # but preserve real missingness as NaN rather than the literal
+        # string "nan" - a donor with an unknown covariate value should be
+        # excluded (complete-case) from models using that covariate in
+        # run_pydeseq2 below, not silently given its own "nan" category.
+        for c in cov_cols:
+            donor_cov[c] = donor_cov[c].astype(object)
+            notna = donor_cov[c].notna()
+            donor_cov.loc[notna, c] = donor_cov.loc[notna, c].astype(str)
         meta = meta.join(donor_cov, on=donor_key)
 
     # 4. Retrieve cell counts per group for filtering
@@ -344,6 +639,47 @@ def run_pydeseq2(pb, keep_genes, group1, group2, name):
     ].copy()
     metadata.index = counts_df.index
 
+    # Complete-case filtering: a covariate with a missing value (NaN,
+    # preserved as such by build_donor_pseudobulk) excludes that pseudobulk
+    # sample from THIS contrast's design, since PyDESeq2/patsy cannot fit a
+    # NaN into a categorical design term. Different contrasts may drop
+    # different samples depending on which covariates were audited as
+    # usable and which donors have missing values for them.
+    design_terms = [c for c in adjustment_covariates if c in metadata.columns]
+    if design_terms:
+        complete_mask = metadata[design_terms].notna().all(axis=1)
+        n_dropped = int((~complete_mask).sum())
+        if n_dropped:
+            print(
+                f"[{name}] dropping {n_dropped} pseudobulk sample(s) with missing "
+                f"covariate value(s) in {design_terms}: "
+                f"{metadata.loc[~complete_mask].index.tolist()}"
+            )
+            metadata = metadata.loc[complete_mask]
+            counts_df = counts_df.loc[metadata.index]
+
+        # Guard: if complete-case filtering pushed either contrast group
+        # below min_donors_per_group, the adjusted design is no longer
+        # supportable. Fall back to the unadjusted (~ disease only) design
+        # for this contrast and say so explicitly, rather than silently
+        # fitting an underpowered adjusted model.
+        group_counts = metadata[disease_key].value_counts()
+        if group_counts.get(group1, 0) < min_donors_per_group or group_counts.get(
+            group2, 0
+        ) < min_donors_per_group:
+            print(
+                f"[{name}] WARNING: complete-case filtering left "
+                f"{dict(group_counts)} (< min_donors_per_group={min_donors_per_group} "
+                f"in at least one group). Falling back to unadjusted design "
+                f"(~ {disease_key}) for this contrast; original covariate-complete "
+                f"metadata is discarded for THIS contrast only."
+            )
+            metadata = pb["meta"][[disease_key]].copy()
+            metadata.index = pb["counts_df"].index
+            counts_df = pb["counts_df"].iloc[:, keep_genes].copy()
+            counts_df = np.rint(counts_df).astype(np.int64)
+            design_terms = []
+
     # Explicitly set category order so group2 is always the reference
     # (dropped) level. DeseqDataSet's `ref_level` argument is deprecated and
     # a no-op in the installed pydeseq2 version, so relying on it silently
@@ -355,13 +691,10 @@ def run_pydeseq2(pb, keep_genes, group1, group2, name):
         metadata[disease_key].astype(str), categories=[group2, group1]
     )
 
-    for cov in adjustment_covariates:
-        if cov in metadata:
-            metadata[cov] = metadata[cov].astype("category")
+    for cov in design_terms:
+        metadata[cov] = metadata[cov].astype("category")
 
-    design_terms = [c for c in adjustment_covariates if c in metadata.columns] + [
-        disease_key
-    ]
+    design_terms = design_terms + [disease_key]
     design_formula = "~ " + " + ".join(design_terms)
 
     dds = DeseqDataSet(
@@ -506,12 +839,33 @@ def run_pseudobulk_de(spec):
     out["comparison"] = f"{group1} vs {group2}"
     out["is_de_primary_q_0_05"] = out["deseq2_q_value"] <= 0.05
 
+    # Donor/cell counts actually contributing to THIS pseudobulk comparison
+    # (post compartment-subsetting and post min_cells_per_pseudobulk
+    # filtering, i.e. the same donors/cells the DESeq2 fit above was run
+    # on) - Reviewer 1 #11 asks that every figure/caption state the exact
+    # donor and cell/nucleus counts per panel; without these columns 04's
+    # plots have no way to display them and every count has to be
+    # separately, and inconsistently, recomputed downstream.
+    # NOTE: this is the count BEFORE any complete-case covariate exclusion
+    # inside run_pydeseq2 (which is design/contrast-specific and can drop a
+    # few additional donors per covariate missingness) - i.e. it is the
+    # denominator for "donors available for this contrast," not
+    # necessarily the exact N in the final fitted model when covariates
+    # were adjusted for. Worth a footnote in the manuscript if the two
+    # ever diverge materially for a given contrast.
+    out["n_donors_group1"] = int(mask1.sum())
+    out["n_donors_group2"] = int(mask2.sum())
+    out["n_cells_group1"] = int(meta.loc[mask1, "n_cells"].sum())
+    out["n_cells_group2"] = int(meta.loc[mask2, "n_cells"].sum())
+
     # Save Outputs
     out_path = OUTPUT_DIR / f"pseudobulk_de_{name}.csv"
     out.to_csv(out_path, index=False)
 
     print(
-        f"{name}: Wrote to {out_path.name} | DE Genes (q < 0.05): {out['is_de_primary_q_0_05'].sum()}"
+        f"{name}: Wrote to {out_path.name} | DE Genes (q < 0.05): {out['is_de_primary_q_0_05'].sum()} "
+        f"| donors {out['n_donors_group1'].iloc[0]} vs {out['n_donors_group2'].iloc[0]} "
+        f"| cells {out['n_cells_group1'].iloc[0]} vs {out['n_cells_group2'].iloc[0]}"
     )
     return out
 
