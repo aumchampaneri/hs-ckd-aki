@@ -10,19 +10,23 @@ PROJECT_DIR = SCRIPT_DIR.parent
 OUTPUT_DIR = PROJECT_DIR / "outputs/" / "pseudobulk_de"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-PLOT_DIR = PROJECT_DIR / "outputs/" / "plots/" / "pseudobulk_de"
+PLOT_DIR = OUTPUT_DIR / "plots/"
 PLOT_DIR.mkdir(parents=True, exist_ok=True)
 
 DATA_DIR = PROJECT_DIR / "data/"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # %% IMPORTS
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import numpy as np
 import pandas as pd
 from adjustText import adjust_text
 from matplotlib.lines import Line2D
+
+plt.ioff()
 
 # %%
 # GLOBAL FONT SETTINGS FOR PUBLICATION-QUALITY, LEGIBLE PLOTS
@@ -271,7 +275,22 @@ inflammasome_program_priority = [
 
 
 def build_gene_set_program_table(programs, priority):
-    """Maps each gene to all programs it belongs to, plus one stable 'primary' program."""
+    """Maps each gene to all programs it belongs to, plus one stable 'primary' program.
+
+    NOTE on Reviewer 2 #4 (gene double-counting across modules, e.g. C3AR1
+    in both 'alternative' and 'receptor'; C5AR1/C5AR2 in both 'terminal' and
+    'receptor'): the `priority` list here only controls which SINGLE color
+    a multi-membership gene is drawn with on these volcano/concordance
+    plots, so each point has one stable visual identity. It does NOT
+    resolve the underlying statistical double-counting the reviewer is
+    concerned about - that lives in whatever script computes the composite
+    module/activation-index SCORES (sc.tl.score_genes per module, summed
+    into an activation index), where a gene appearing in multiple modules
+    genuinely gets counted more than once in the composite. That needs to
+    be fixed at the scoring step, not here. multi_membership_genes.csv
+    (written below) documents every affected gene and its assigned
+    programs so the scope of the issue is visible.
+    """
     rows = []
     for program, genes in programs.items():
         for gene in genes:
@@ -291,6 +310,20 @@ def build_gene_set_program_table(programs, priority):
     return gene_to_programs, primary
 
 
+def report_multi_membership_genes(gene_to_programs, primary, gene_set_name):
+    rows = [
+        {
+            "gene_set": gene_set_name,
+            "gene_symbol": gene,
+            "all_programs": programs_joined,
+            "assigned_primary_program_for_plots": primary[gene],
+        }
+        for gene, programs_joined in gene_to_programs.items()
+        if ";" in programs_joined
+    ]
+    return pd.DataFrame(rows)
+
+
 complement_gene_to_pathways, complement_gene_to_primary_pathway = (
     build_gene_set_program_table(complement_programs, complement_pathway_priority)
 )
@@ -300,6 +333,28 @@ inflammasome_gene_to_programs, inflammasome_gene_to_primary_program = (
     build_gene_set_program_table(inflammasome_programs, inflammasome_program_priority)
 )
 inflammasome_symbol_set = set(inflammasome_gene_to_programs)
+
+multi_membership_genes = pd.concat(
+    [
+        report_multi_membership_genes(
+            complement_gene_to_pathways, complement_gene_to_primary_pathway, "complement"
+        ),
+        report_multi_membership_genes(
+            inflammasome_gene_to_programs,
+            inflammasome_gene_to_primary_program,
+            "inflammasome",
+        ),
+    ],
+    ignore_index=True,
+)
+multi_membership_genes.to_csv(OUTPUT_DIR / "multi_membership_genes.csv", index=False)
+if not multi_membership_genes.empty:
+    print(
+        f"{len(multi_membership_genes)} gene(s) belong to multiple programs "
+        "(see multi_membership_genes.csv) - resolved here to a single display "
+        "color via priority order; does not fix module-score double-counting "
+        "(that's a scoring-step issue, not a plotting one)."
+    )
 
 # %%
 # SUBCLASSLEVEL1 REFERENCE
@@ -441,7 +496,7 @@ def get_direction_labels(df, comparison_id):
 
 def get_xaxis_label(df, comparison_id):
     group1, group2 = get_contrast_labels(df, comparison_id)
-    return f"primary log2 fold change ({group1} / {group2})"
+    return f"log2 fold change, DESeq2 ({group1} / {group2})"
 
 
 # %%
@@ -543,6 +598,85 @@ expression_filter_report = report_expression_filter_impact(all_pseudobulk_de_tab
 
 
 # %%
+# FIGURE DENOMINATOR RECONCILIATION TABLE
+# > Reviewer 1 #11: figure captions/text must state exact donor and
+# cell/nucleus counts per panel, and denominators (e.g. "2/33" in the
+# abstract vs "2/23" in a figure) must be reconciled. Both numbers differ
+# legitimately across compartments/comparisons (different genes pass the
+# expression filter in different cell populations), but nothing previously
+# recorded WHY a given panel's denominator was what it was. This table is
+# the single source every figure title below pulls its counts from, and it
+# is also written to disk so the same numbers can be quoted directly in the
+# manuscript text/captions instead of being separately, and potentially
+# inconsistently, recomputed by hand.
+####
+def build_gene_count_denominator_table(tables, gene_symbol_set, gene_set_name):
+    rows = []
+    for table_id, df in sorted(tables.items()):
+        tested = df[df["passes_expression_filter"].fillna(False)].copy()
+        in_set_curated = int(len(gene_symbol_set))
+        in_set_present_in_atlas = int(df["gene_symbol"].isin(gene_symbol_set).sum())
+        in_set_tested = tested["gene_symbol"].isin(gene_symbol_set)
+        n_tested = int(in_set_tested.sum())
+        n_sig = int(
+            (tested.loc[in_set_tested, "primary_q_value"] <= 0.05).sum()
+        )
+        row = {
+            "table_id": table_id,
+            "gene_set": gene_set_name,
+            "n_curated_in_gene_set_definition": in_set_curated,
+            "n_present_in_atlas": in_set_present_in_atlas,
+            "n_tested_this_comparison": n_tested,
+            "n_significant_q0.05": n_sig,
+        }
+        for col in [
+            "n_donors_group1",
+            "n_donors_group2",
+            "n_cells_group1",
+            "n_cells_group2",
+        ]:
+            if col in df.columns and df[col].notna().any():
+                row[col] = df[col].dropna().iloc[0]
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+gene_count_denominator_table = pd.concat(
+    [
+        build_gene_count_denominator_table(
+            all_pseudobulk_de_tables, complement_symbol_set, "complement"
+        ),
+        build_gene_count_denominator_table(
+            all_pseudobulk_de_tables, inflammasome_symbol_set, "inflammasome"
+        ),
+    ],
+    ignore_index=True,
+)
+gene_count_denominator_table.to_csv(
+    OUTPUT_DIR / "figure_gene_count_denominators.csv", index=False
+)
+
+
+def get_panel_annotation(table_id, gene_set_name):
+    """Returns a short 'n donors: X vs Y | n nuclei: A vs B' string for a
+    given table_id/gene_set, pulled from gene_count_denominator_table so
+    every panel's caption text stays consistent with the CSV above."""
+    match = gene_count_denominator_table[
+        (gene_count_denominator_table["table_id"] == table_id)
+        & (gene_count_denominator_table["gene_set"] == gene_set_name)
+    ]
+    if match.empty or "n_donors_group1" not in match.columns:
+        return None
+    r = match.iloc[0]
+    if pd.isna(r.get("n_donors_group1")):
+        return None
+    return (
+        f"n donors: {int(r['n_donors_group1'])} vs {int(r['n_donors_group2'])} | "
+        f"n nuclei: {int(r['n_cells_group1'])} vs {int(r['n_cells_group2'])}"
+    )
+
+
+# %%
 # COMPLEMENT-AWARE VOLCANO HELPERS
 ####
 def prepare_complement_volcano_df(df):
@@ -622,6 +756,7 @@ def plot_complement_aware_volcano(
     complement_only=False,
     ax=None,
     show_legend=True,
+    table_id=None,
 ):
     plot_df = prepare_complement_volcano_df(df)
     if complement_only:
@@ -736,12 +871,18 @@ def plot_complement_aware_volcano(
         if complement_only
         else "all genes with complement overlay"
     )
-    ax.set_title(
-        f"{title}\n{suffix} | complement q<{q_threshold}: {n_comp_sig}/{n_comp}",
-        fontsize=FONT_SIZES["panel_title"],
-    )
+    # Panel annotation (donor/cell counts) sourced from
+    # figure_gene_count_denominators.csv - see the block above where it's
+    # built - so this always matches what's reported in the manuscript
+    # text/supplementary tables rather than drifting independently.
+    annotation = get_panel_annotation(table_id, "complement") if table_id else None
+    count_line = f"complement q<{q_threshold}: {n_comp_sig}/{n_comp} tested"
+    title_text = f"{title}\n{suffix} | {count_line}"
+    if annotation:
+        title_text += f"\n{annotation}"
+    ax.set_title(title_text, fontsize=FONT_SIZES["panel_title"])
     ax.set_xlabel(get_xaxis_label(plot_df, comparison_id))
-    ax.set_ylabel("-log10 primary BH q-value")
+    ax.set_ylabel("-log10 BH-adjusted q-value, DESeq2")
     ax.grid(True, alpha=0.14)
     if show_legend:
         add_complement_legend(ax, include_background=not complement_only)
@@ -807,6 +948,7 @@ def plot_complement_volcano_triptych(
             label_top_background=label_top_background,
             ax=ax,
             show_legend=False,
+            table_id=table_id,
         )
 
     if figure_title:
@@ -1046,6 +1188,7 @@ def plot_inflammasome_aware_volcano(
     inflammasome_only=False,
     ax=None,
     show_legend=True,
+    table_id=None,
 ):
     plot_df = prepare_inflammasome_volcano_df(df)
     if inflammasome_only:
@@ -1164,12 +1307,14 @@ def plot_inflammasome_aware_volcano(
         if inflammasome_only
         else "all genes with inflammasome overlay"
     )
-    ax.set_title(
-        f"{title}\n{suffix} | inflammasome q<{q_threshold}: {n_infl_sig}/{n_infl}",
-        fontsize=FONT_SIZES["panel_title"],
-    )
+    annotation = get_panel_annotation(table_id, "inflammasome") if table_id else None
+    count_line = f"inflammasome q<{q_threshold}: {n_infl_sig}/{n_infl} tested"
+    title_text = f"{title}\n{suffix} | {count_line}"
+    if annotation:
+        title_text += f"\n{annotation}"
+    ax.set_title(title_text, fontsize=FONT_SIZES["panel_title"])
     ax.set_xlabel(get_xaxis_label(plot_df, comparison_id))
-    ax.set_ylabel("-log10 primary BH q-value")
+    ax.set_ylabel("-log10 BH-adjusted q-value, DESeq2")
     ax.grid(True, alpha=0.14)
     if show_legend:
         add_inflammasome_legend(ax, include_background=not inflammasome_only)
@@ -1235,6 +1380,7 @@ def plot_inflammasome_volcano_triptych(
             label_top_background=label_top_background,
             ax=ax,
             show_legend=False,
+            table_id=table_id,
         )
 
     if figure_title:

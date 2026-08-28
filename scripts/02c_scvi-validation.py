@@ -91,7 +91,7 @@ obs = pd.read_parquet(OUTPUT_DIR / "complement_scores_obs.parquet")
 print(f"Loaded {obs.shape[0]} cells x {obs.shape[1]} obs columns")
 
 CONTINUOUS_COVARIATES = ["nCount_RNA", "nFeature_RNA", "percent.mt"]
-CATEGORICAL_COVARIATES = ["experiment_id", "donor_id", "suspension_type"]  # suspension_type ~ modality; rename if your schema differs
+CATEGORICAL_COVARIATES = ["experiment_id", "donor_id", "assay"]
 
 confound_rows = []
 for score_col in SCORE_COLS:
