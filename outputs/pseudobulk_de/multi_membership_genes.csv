@@ -1,0 +1,4 @@
+gene_set,gene_symbol,all_programs,assigned_primary_program_for_plots
+complement,C3AR1,alternative;receptor,receptor
+complement,C5AR1,receptor;terminal,receptor
+complement,C5AR2,receptor;terminal,receptor

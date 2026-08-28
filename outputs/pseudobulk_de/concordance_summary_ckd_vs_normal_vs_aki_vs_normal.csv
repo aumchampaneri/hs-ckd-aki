@@ -1,0 +1,2 @@
+comparison_id_x,comparison_id_y,n_genes_compared,pearson_r,pearson_p,spearman_rho,spearman_p,n_both_sig,n_concordant_both_sig,n_discordant_both_sig,frac_concordant_among_both_sig
+ckd_vs_normal,aki_vs_normal,33592,0.4552248493016601,0.0,0.4609179726702573,0.0,1380,1354,26,0.981159420289855

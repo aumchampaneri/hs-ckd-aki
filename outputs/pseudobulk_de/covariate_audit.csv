@@ -1,0 +1,10 @@
+covariate,column,n_levels,n_donors_missing_excluded,min_cell_donors_in_used_groups,usable,reason
+assay_platform,assay,2,0,20,True,ok
+sex,sex,2,0,13,True,ok
+diabetes_history,diabetes_history_clean,2,22,5,True,ok
+hypertension,hypertension_clean,2,20,8,True,ok
+race,Race_grouped,2,0,16,True,ok
+age_group,Age_grouped,3,0,6,True,ok
+egfr_group,egfr_grouped,2,21,2,False,empty_or_undersized_cell_in_crosstab
+region,region_grouped,2,0,3,True,ok
+tissue_collection,TissueCollection_grouped,2,0,2,False,empty_or_undersized_cell_in_crosstab
