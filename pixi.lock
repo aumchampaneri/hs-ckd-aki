@@ -346,19 +346,27 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/40/7b/639411281256c84e8111bf6cb9676c44dbf5d8ad4cb042f4359b7e7b9e74/formulaic_contrasts-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/41/f0/26d034280ace2022e68415ec1c51bd059fa3089e4cb32a72dfe33fe4b810/gseapy-1.3.0-cp310-cp310-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/43/8c/f637418a679fb49bc3368940e0705df3b43c85b2ff5ae91455e78401750b/pydeseq2-0.5.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/45/6b/dda5d3959505a7bf5ac51fb5df69285f7ed0b1aebec518d544a5a0cc4040/scikit_misc-0.5.2-cp310-cp310-macosx_11_0_arm64.whl
+      - pypi: https://files.pythonhosted.org/packages/45/d8/55e0901103c93d57bab3b932294c216f0cbd49054187ce29f8f13808d530/jaxopt-0.8.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/47/8b/924ac8416164382421c40af5564252004ef42a52f68d80bd8bb910ab8d92/tiledbsoma-2.3.0-cp310-cp310-macosx_13_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/48/ca/36339329c4604adbcc99c899b7eb1ce1a555c499b6a6860757dc9bfed36d/narwhals-2.22.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4a/cd/23c89d53c36028bccb39f55aa5dd24c4bdaab76c4d556ad43dc8cf026918/kneed-0.8.6-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/4c/0b/75c3e700b7741a127be32985dbdd9522e4b9953ed3e77440dca8c2381dab/mellon-1.7.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5f/fc/a7bf5b6e4e617b45f90f2d9d2a68519c249c81dd4fc2658c7a2a61c4f4b7/aiohappyeyeballs-2.6.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/63/70/26ca3f06aace16f2352796b08704338d74b6d1a24ca38f2771afbb7ed915/frozenlist-1.8.0-cp310-cp310-macosx_11_0_arm64.whl
+      - pypi: https://files.pythonhosted.org/packages/6b/a4/bd8ad7d1cf66268219f282d4268b6ba73f8ff51c5fba2c9663adab103615/sorted_nearest-0.0.41.tar.gz
       - pypi: https://files.pythonhosted.org/packages/72/f6/d15c889c7c65dbc41c84fe83243c203b083f70cef62ed0acc630098b2012/leidenalg-0.12.0-cp38-abi3-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/74/be/dc99b431346b2d2372bbe3ea7272c2b8957dd46b6ccebd0426d66dbfc9a8/legendkit-0.5.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/79/34/5ea03617c66991ab8d0d86adae8db5fbca8a75302da975051b0117ca9aa3/harmonypy-2.0.0-cp310-cp310-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/81/a4/07c6c3db30dfb3dda5bc8ed5476c0ae42e345414a304178c2d0762218c36/cellxgene_census-1.18.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/83/89/35ea267fb12e608529f0df315aff200171e555623cb38b2e4444592ce872/pyranges-0.1.4-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/85/dc/bf8a9b7e289dd9b0b550b9964786231fe48264583eecd733f7ab77b374b7/ncls-0.0.70-cp310-cp310-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/90/5f/85535dfb3cfd6442d66d1df1694062c5d6df02f895329e7e120b2a3d2b8b/aiobotocore-3.7.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/92/6c/12f14d20ccd49bfe8709cebd1b77a244f019e44a8702d3962021b618812e/celltypist-1.7.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/94/dc/66c61aca927230c9cf97a3cb005c803971a1076ff9f7d61085d035c20085/wrapt-2.2.2-cp310-cp310-macosx_11_0_arm64.whl
+      - pypi: https://files.pythonhosted.org/packages/99/55/db07de81b5c630da5cbf5c7df646580ca26dfaefa593667fc6f2fe016d2e/tabulate-0.10.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/99/d2/39aa541284212f9f868c83b9af92c42e1dff89061df4153de1b5b91a75e8/SEACells-0.3.3.tar.gz
       - pypi: https://files.pythonhosted.org/packages/9a/a9/b3568f6abc37aa9ff04f1e4ec9498d3e8753470e2d4e682118caef73a8d3/marsilea-0.6.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a1/d3/20a61a248feb1249cd81f83ce731f0bdf5170ed96a08a298f7081cda9e90/interface_meta-2.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a5/0b/f68a968b49876eae0f2a515387093cebb2eb9451380a96741cc20efac0d0/s3fs-2026.6.0-py3-none-any.whl
@@ -366,6 +374,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/a7/b7/132b1673c0ec00881d49d56c09624942fa0ebd2fc21d73d80647efa082e9/mygene-3.2.2-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a8/8f/7b3ec212f1ea0683f55f978e3246bc313c38818664edfc97a9f349a4901e/yarl-1.24.2-cp310-cp310-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/af/07/b5306e080149d3343ae9b920db0b594f9bd419d6ea4baeeeb54e0d23811c/adpbulk-0.1.4-py2.py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/b7/07/4ad22d81edafdc6810dffb22fd16ff5150bd6dc7a08b45f392aec7429282/palantir-1.4.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/b8/2c/897bdd17b05724c894a5b831c6b2e9853adcc2d07a70d6246c0cd5cd3912/adjusttext-1.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/b9/08/6862cad708effcf16baabbb9e6dae1d469858764dd38ec09677f9f2b0755/decoupler-2.1.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bd/30/b6617c74a8234ff60265373ef730eb6378ccdda74042f51f9ac936191664/mizani-0.14.4-py3-none-any.whl
@@ -5703,6 +5712,39 @@ packages:
   - mypy ; extra == 'dev'
   - pandas-stubs ; extra == 'dev'
   requires_python: '>=3.10.0'
+- pypi: https://files.pythonhosted.org/packages/45/6b/dda5d3959505a7bf5ac51fb5df69285f7ed0b1aebec518d544a5a0cc4040/scikit_misc-0.5.2-cp310-cp310-macosx_11_0_arm64.whl
+  name: scikit-misc
+  version: 0.5.2
+  sha256: 96253aee85a921b832d63a7339053ea79d65c44ac6a5b0f9bd06be97d197d8c3
+  requires_dist:
+  - numpy>=1.26.4
+  - scikit-misc[doc] ; extra == 'all'
+  - scikit-misc[build] ; extra == 'all'
+  - scikit-misc[lint] ; extra == 'all'
+  - scikit-misc[test] ; extra == 'all'
+  - scikit-misc[dev] ; extra == 'all'
+  - numpydoc ; extra == 'doc'
+  - sphinx ; extra == 'doc'
+  - cython ; extra == 'build'
+  - build ; extra == 'build'
+  - spin ; extra == 'build'
+  - meson ; extra == 'build'
+  - meson-python ; extra == 'build'
+  - ninja ; extra == 'build'
+  - ruff ; extra == 'lint'
+  - pytest-cov ; extra == 'test'
+  - wheel ; extra == 'dev'
+  - twine ; extra == 'dev'
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/45/d8/55e0901103c93d57bab3b932294c216f0cbd49054187ce29f8f13808d530/jaxopt-0.8.5-py3-none-any.whl
+  name: jaxopt
+  version: 0.8.5
+  sha256: ff221d1a86908ec759eb1e219ee1d12bf208a70707e961bf7401076fe7cf4d5e
+  requires_dist:
+  - jax>=0.2.18
+  - jaxlib>=0.1.69
+  - numpy>=1.18.4
+  - scipy>=1.0.0
 - pypi: https://files.pythonhosted.org/packages/47/8b/924ac8416164382421c40af5564252004ef42a52f68d80bd8bb910ab8d92/tiledbsoma-2.3.0-cp310-cp310-macosx_13_0_arm64.whl
   name: tiledbsoma
   version: 2.3.0
@@ -5790,6 +5832,33 @@ packages:
   - pytest-cov>=3.0.0 ; extra == 'testing'
   - pytest>=5.0.1 ; extra == 'testing'
   requires_python: '>=3.8'
+- pypi: https://files.pythonhosted.org/packages/4c/0b/75c3e700b7741a127be32985dbdd9522e4b9953ed3e77440dca8c2381dab/mellon-1.7.1-py3-none-any.whl
+  name: mellon
+  version: 1.7.1
+  sha256: c8120cd8a8b71519bdcc0105d8778c9314afeb6aa8934cfd23fde1f1432581bf
+  requires_dist:
+  - jax
+  - jaxopt
+  - scikit-learn
+  - pynndescent
+  - black ; extra == 'dev'
+  - flake8 ; extra == 'dev'
+  - isort ; extra == 'dev'
+  - mypy ; extra == 'dev'
+  - pytest ; extra == 'dev'
+  - pytest-cov ; extra == 'dev'
+  - typing-extensions ; extra == 'dev'
+  - sphinxcontrib-autoprogram ; extra == 'docs'
+  - sphinxcontrib-napoleon ; extra == 'docs'
+  - sphinx-autodocgen ; extra == 'docs'
+  - sphinx-github-style>=1.2.2 ; extra == 'docs'
+  - sphinx-mdinclude ; extra == 'docs'
+  - m2r2 ; extra == 'docs'
+  - nbsphinx ; extra == 'docs'
+  - furo ; extra == 'docs'
+  - typing-extensions ; extra == 'docs'
+  - ipython ; extra == 'docs'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl
   name: pluggy
   version: 1.6.0
@@ -5811,6 +5880,17 @@ packages:
   version: 1.8.0
   sha256: a88f062f072d1589b7b46e951698950e7da00442fc1cacbe17e19e025dc327ad
   requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/6b/a4/bd8ad7d1cf66268219f282d4268b6ba73f8ff51c5fba2c9663adab103615/sorted_nearest-0.0.41.tar.gz
+  name: sorted-nearest
+  version: 0.0.41
+  sha256: bd3ce6cbbc1df9a00e0a8afafe00556f4eaa2499a37fc5901227d0beb10b7298
+  requires_dist:
+  - numpy
+  - black ; extra == 'dev'
+  - bumpver ; extra == 'dev'
+  - isort ; extra == 'dev'
+  - pip-tools ; extra == 'dev'
+  - pytest ; extra == 'dev'
 - pypi: https://files.pythonhosted.org/packages/72/f6/d15c889c7c65dbc41c84fe83243c203b083f70cef62ed0acc630098b2012/leidenalg-0.12.0-cp38-abi3-macosx_11_0_arm64.whl
   name: leidenalg
   version: 0.12.0
@@ -5856,6 +5936,33 @@ packages:
   - gitpython ; extra == 'doc'
   - sphinx<7.0.0 ; extra == 'doc'
   requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/83/89/35ea267fb12e608529f0df315aff200171e555623cb38b2e4444592ce872/pyranges-0.1.4-py3-none-any.whl
+  name: pyranges
+  version: 0.1.4
+  sha256: 2bcf7de43137ee42ab009cedf40eff12ced26f7889c35c34dd3c848a7bf7fed7
+  requires_dist:
+  - pandas
+  - ncls>=0.0.63
+  - tabulate
+  - sorted-nearest>=0.0.33
+  - natsort
+  - black==24.4.2 ; extra == 'dev'
+  - bumpver ; extra == 'dev'
+  - isort==5.13.2 ; extra == 'dev'
+  - pip-tools ; extra == 'dev'
+  - pytest==7.4.3 ; extra == 'dev'
+  - mypy==1.8.0 ; extra == 'dev'
+- pypi: https://files.pythonhosted.org/packages/85/dc/bf8a9b7e289dd9b0b550b9964786231fe48264583eecd733f7ab77b374b7/ncls-0.0.70-cp310-cp310-macosx_11_0_arm64.whl
+  name: ncls
+  version: 0.0.70
+  sha256: aa4a10ef49f7e84d0d08a7e8bb06e2090966f76733e6def0be2b49ee4c520959
+  requires_dist:
+  - numpy
+  - black ; extra == 'dev'
+  - bumpver ; extra == 'dev'
+  - isort ; extra == 'dev'
+  - pip-tools ; extra == 'dev'
+  - pytest ; extra == 'dev'
 - pypi: https://files.pythonhosted.org/packages/90/5f/85535dfb3cfd6442d66d1df1694062c5d6df02f895329e7e120b2a3d2b8b/aiobotocore-3.7.0-py3-none-any.whl
   name: aiobotocore
   version: 3.7.0
@@ -5893,6 +6000,27 @@ packages:
   - pytest ; extra == 'dev'
   - setuptools ; extra == 'dev'
   requires_python: '>=3.9'
+- pypi: https://files.pythonhosted.org/packages/99/55/db07de81b5c630da5cbf5c7df646580ca26dfaefa593667fc6f2fe016d2e/tabulate-0.10.0-py3-none-any.whl
+  name: tabulate
+  version: 0.10.0
+  sha256: f0b0622e567335c8fabaaa659f1b33bcb6ddfe2e496071b743aa113f8774f2d3
+  requires_dist:
+  - wcwidth ; extra == 'widechars'
+  requires_python: '>=3.10'
+- pypi: https://files.pythonhosted.org/packages/99/d2/39aa541284212f9f868c83b9af92c42e1dff89061df4153de1b5b91a75e8/SEACells-0.3.3.tar.gz
+  name: seacells
+  version: 0.3.3
+  sha256: 0f75d1970ab148732796d2d7afbd1001f779c00959af3212002434780254fc15
+  requires_dist:
+  - numpy
+  - pandas
+  - palantir
+  - scanpy>1.8
+  - anndata
+  - numba>=0.51.2
+  - scipy>=1.5
+  - pyranges
+  requires_python: '>=3.8.0'
 - pypi: https://files.pythonhosted.org/packages/9a/a9/b3568f6abc37aa9ff04f1e4ec9498d3e8753470e2d4e682118caef73a8d3/marsilea-0.6.2-py3-none-any.whl
   name: marsilea
   version: 0.6.2
@@ -5951,6 +6079,36 @@ packages:
   - pandas>=0.21
   - tqdm
   - pytest
+- pypi: https://files.pythonhosted.org/packages/b7/07/4ad22d81edafdc6810dffb22fd16ff5150bd6dc7a08b45f392aec7429282/palantir-1.4.5-py3-none-any.whl
+  name: palantir
+  version: 1.4.5
+  sha256: 0e74c04b4374ff6ef8c1b280f4a040f38176461195c7f06d706b361e6f1e3cf8
+  requires_dist:
+  - scanpy>=1.6.0
+  - mellon>=1.6.1
+  - anndata>=0.8.0
+  - ml-dtypes>=0.5.0
+  - igraph>=0.11.8
+  - scikit-learn
+  - matplotlib>=3.8.0
+  - numpy>=1.17.0
+  - pandas>=0.22.0
+  - scipy>=1.3
+  - networkx>=2.1
+  - joblib
+  - pygam ; extra == 'gam'
+  - fcsparser>=0.1.2 ; extra == 'fcs'
+  - pygam ; extra == 'full'
+  - fcsparser>=0.1.2 ; extra == 'full'
+  - pytest>=7.0.0 ; extra == 'test-base'
+  - pytest-cov>=4.0.0 ; extra == 'test-base'
+  - h5py ; extra == 'test-base'
+  - pytest>=7.0.0 ; extra == 'test'
+  - pytest-cov>=4.0.0 ; extra == 'test'
+  - h5py ; extra == 'test'
+  - fcsparser>=0.1.2 ; extra == 'test'
+  - fcsparser>=0.1.2 ; extra == 'pre313'
+  requires_python: '>=3.9'
 - pypi: https://files.pythonhosted.org/packages/b8/2c/897bdd17b05724c894a5b831c6b2e9853adcc2d07a70d6246c0cd5cd3912/adjusttext-1.4.0-py3-none-any.whl
   name: adjusttext
   version: 1.4.0
