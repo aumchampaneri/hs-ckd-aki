@@ -1,5 +1,6 @@
 # %% Download data from CZ CELLxGENE
 # > Download data from CELLxGENE using the CELLxGENE CLI and aquire citation
+# > May need to switch to a newer version of the CLI 'latest' for downloading
 #
 # %% PATH SETUP
 from pathlib import Path
@@ -21,11 +22,12 @@ census = cellxgene_census.open_soma()
 census_info = census["census_info"]["summary"].read().concat().to_pandas()
 census_info
 # %%
-census = cellxgene_census.open_soma(census_version="2025-11-08")
+census = cellxgene_census.open_soma(census_version="latest")
 census["census_info"]["summary"].read().concat().to_pandas()
 datasets = census["census_info"]["datasets"].read().concat().to_pandas()
 # %%
-dataset_id = "7ff0197b-d175-49bf-b4fa-150fe0995d93"
+dataset_id = "7ff0197b-d175-49bf-b4fa-150fe0995d93" # single nucleus RNA-seq (n = 1,388,643)
+# dataset_id = "91f31e05-56d8-46fc-b408-d90c9228a81b" # single cell RNA-seq (n = 348,984)
 file_name = f"{dataset_id}.h5ad"
 file_path = DATA_DIR / file_name
 datasets[datasets["dataset_id"] == dataset_id].iloc[0]
@@ -33,7 +35,7 @@ datasets[datasets["dataset_id"] == dataset_id].iloc[0]
 if not file_path.exists():
     print(f"Downloading {dataset_id} to {file_path}...")
     cellxgene_census.download_source_h5ad(
-        dataset_id, to_path=str(file_path), census_version="2025-11-08", progress_bar=True
+        dataset_id, to_path=str(file_path), census_version="latest", progress_bar=True
     )
 else:
     print(f"File already exists at {file_path}. Skipping download.")
