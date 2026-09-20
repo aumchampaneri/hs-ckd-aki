@@ -8,6 +8,8 @@
 ## Environment
 For maximum reproducibility, we recommend using the included pixi environment. To install pixi, follow the instructions [here](https://pixi.prefix.dev/latest/).
 
+> **NOTE:** Run `pixi run setup-r` to install R dependencies.
+
 ## Hardware
 The analysis was performed on a 16" M1 Max MacBook Pro with 64GB RAM. Scripts have not been validated for use on any other hardware.
 

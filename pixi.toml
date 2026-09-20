@@ -6,6 +6,7 @@ platforms = ["osx-arm64"]
 version = "0.1.0"
 
 [tasks]
+setup-r = "Rscript -e 'if (!requireNamespace(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\", repos=\"https://cloud.r-project.org\"); BiocManager::install(c(\"slingshot\", \"tradeSeq\", \"DelayedMatrixStats\", \"BiocParallel\"), update=FALSE)'"
 
 [dependencies]
 python = "3.10.18.*"
