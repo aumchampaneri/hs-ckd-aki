@@ -6,7 +6,8 @@ platforms = ["osx-arm64"]
 version = "0.1.0"
 
 [tasks]
-setup-r = "Rscript -e 'if (!requireNamespace(\"BiocManager\", quietly = TRUE)) install.packages(\"BiocManager\", repos=\"https://cloud.r-project.org\"); BiocManager::install(c(\"slingshot\", \"tradeSeq\", \"DelayedMatrixStats\", \"BiocParallel\"), update=FALSE)'"
+setup-r = '''Rscript -e "if (isFALSE(requireNamespace('BiocManager', quietly=TRUE))) install.packages('BiocManager', repos='https://cloud.r-project.org'); pk <- c('slingshot','tradeSeq','DelayedMatrixStats','BiocParallel'); BiocManager::install(pk, version='3.20', update=FALSE, ask=FALSE); stopifnot(all(vapply(pk, requireNamespace, logical(1), quietly=TRUE)))"'''
+check-r = '''Rscript -e "pk <- c('slingshot','tradeSeq','DelayedMatrixStats','BiocParallel'); ok <- suppressWarnings(vapply(pk, requireNamespace, logical(1), quietly=TRUE)); print(ok); quit(status=as.integer(!all(ok)))"'''
 
 [dependencies]
 python = "3.10.18.*"
@@ -19,7 +20,12 @@ ipywidgets = ">=8.1.8,<9"
 pydantic = ">=2.13.4,<3"
 jupyterlab = ">=4.6.0,<5"
 scikit-image = ">=0.25.2,<0.26"
-r-base = ">=4.6.1,<4.7"
+r-locfit = ">=1.5_9.12,<2"
+clang_osx-arm64 = ">=23.1.1,<24"
+clangxx_osx-arm64 = ">=23.1.1,<24"
+gfortran_osx-arm64 = ">=16.2.0,<17"
+pkg-config = ">=0.29.2,<0.30"
+r-base = ">=4.4.3,<4.5"
 
 [pypi-dependencies]
 cellxgene-census = ">=1.18.0, <2"
