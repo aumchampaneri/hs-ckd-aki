@@ -4,8 +4,7 @@
 # %% PATH SETUP
 from pathlib import Path
 
-SCRIPT_DIR = Path.cwd()
-PROJECT_DIR = SCRIPT_DIR.parent
+PROJECT_DIR = Path.cwd().parent
 
 OUTPUT_DIR = PROJECT_DIR / "outputs/" / "pseudobulk_de"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
