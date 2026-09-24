@@ -26,3 +26,7 @@ outputs/eGFR_correlation/
 .ipynb_checkpoints/
 outputs/qc/decontx_batches/
 manuscript/figures/v1 figures/
+
+# too large to comit
+outputs/pseudobulk_de/reviewer_de_results_long.csv
+outputs/pseudobulk_de/all_pseudobulk_de_results.csv

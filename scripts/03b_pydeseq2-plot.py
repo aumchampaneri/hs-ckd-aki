@@ -145,35 +145,19 @@ background_color = "#d1d5db"
 # > Complement + inflammasome gene sets used to annotate volcano plots
 ####
 complement_programs = {
-    "classical": [
-        "C1QA",
-        "C1QB",
-        "C1QC",
-        "C1R",
-        "C1S",
-        "C2",
-        "C4A",
-        "C4B",
-        "C4BPA",
-        "C4BPB",
-    ],
+    # Final non-overlapping definitions synchronized with 02b/02c/03a.
+    "classical": ["C1QA", "C1QB", "C1QC", "C1R", "C1S", "C2", "C4A", "C4B", "C4BPA", "C4BPB"],
     "lectin": ["MBL2", "FCN1", "FCN2", "FCN3", "MASP1", "MASP2", "MASP3"],
-    "alternative": ["C3", "CFB", "CFD", "CFP", "C3AR1"],
-    "terminal": ["C5", "C5AR1", "C5AR2", "C6", "C7", "C8A", "C8B", "C8G", "C9"],
+    "alternative": ["C3", "CFB", "CFD", "CFP"],
+    "terminal": ["C5", "C6", "C7", "C8A", "C8B", "C8G", "C9"],
     "receptor": ["C3AR1", "C5AR1", "C5AR2", "CR1", "CR2", "ITGAM", "ITGAX", "VSIG4"],
-    "regulator": [
-        "CFH",
-        "CFHR1",
-        "CFHR2",
-        "CFHR3",
-        "CFHR4",
-        "CFHR5",
-        "CFI",
-        "CD46",
-        "CD55",
-        "CD59",
-        "SERPING1",
-    ],
+    "regulator": ["CFH", "CFI", "CD46", "CD55", "CD59", "SERPING1"],
+}
+
+# CFHR1-5 are descriptive only and are excluded from the six inferential
+# complement programs/composites.
+descriptive_complement_programs = {
+    "cfhr": ["CFHR1", "CFHR2", "CFHR3", "CFHR4", "CFHR5"],
 }
 
 complement_pathway_palette = {
@@ -277,19 +261,9 @@ inflammasome_program_priority = [
 def build_gene_set_program_table(programs, priority):
     """Maps each gene to all programs it belongs to, plus one stable 'primary' program.
 
-    NOTE on Reviewer 2 #4 (gene double-counting across modules, e.g. C3AR1
-    in both 'alternative' and 'receptor'; C5AR1/C5AR2 in both 'terminal' and
-    'receptor'): the `priority` list here only controls which SINGLE color
-    a multi-membership gene is drawn with on these volcano/concordance
-    plots, so each point has one stable visual identity. It does NOT
-    resolve the underlying statistical double-counting the reviewer is
-    concerned about - that lives in whatever script computes the composite
-    module/activation-index SCORES (sc.tl.score_genes per module, summed
-    into an activation index), where a gene appearing in multiple modules
-    genuinely gets counted more than once in the composite. That needs to
-    be fixed at the scoring step, not here. multi_membership_genes.csv
-    (written below) documents every affected gene and its assigned
-    programs so the scope of the issue is visible.
+    Complement modules are non-overlapping in the finalized pipeline. The
+    priority list is retained only as a stable plotting convention and should
+    not alter module membership or statistical results.
     """
     rows = []
     for program, genes in programs.items():
