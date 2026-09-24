@@ -92,11 +92,10 @@ comparison_specs = [
 run_subclasslevel1_targeted_de = True
 subclasslevel1_key = "SubclassLevel1"
 
-# Apply apeGLM-style LFC shrinkage (PyDESeq2's lfc_shrink) on top of the raw
-# Wald MLE log2FoldChange. Shrinkage pulls noisy, low-count-driven fold
-# changes toward zero without changing p-values, which is the standard fix
-# for over-inflated log2FC on genes with few informative donors. The raw MLE
-# estimate is retained alongside the shrunk value for every gene.
+# Apply PyDESeq2 LFC shrinkage (`DeseqStats.lfc_shrink`) on top of the raw
+# Wald MLE log2FoldChange. The exact shrinkage implementation is determined
+# by the installed PyDESeq2 version; do not label it apeGLM unless that
+# version explicitly documents apeGLM. Raw MLE estimates are retained.
 apply_lfc_shrinkage = True
 
 # Comparison-ID pairs to run cross-contrast concordance analysis on. Pairs
@@ -110,35 +109,20 @@ concordance_pairs = [("ckd_vs_normal", "aki_vs_normal")]
 # can independently compute pathway-level statistics without depending on
 # the plotting script.
 complement_programs = {
-    "classical": [
-        "C1QA",
-        "C1QB",
-        "C1QC",
-        "C1R",
-        "C1S",
-        "C2",
-        "C4A",
-        "C4B",
-        "C4BPA",
-        "C4BPB",
-    ],
+    # Final non-overlapping definitions, synchronized with 02b/02c.
+    "classical": ["C1QA", "C1QB", "C1QC", "C1R", "C1S", "C2", "C4A", "C4B", "C4BPA", "C4BPB"],
     "lectin": ["MBL2", "FCN1", "FCN2", "FCN3", "MASP1", "MASP2", "MASP3"],
-    "alternative": ["C3", "CFB", "CFD", "CFP", "C3AR1"],
-    "terminal": ["C5", "C5AR1", "C5AR2", "C6", "C7", "C8A", "C8B", "C8G", "C9"],
+    "alternative": ["C3", "CFB", "CFD", "CFP"],
+    "terminal": ["C5", "C6", "C7", "C8A", "C8B", "C8G", "C9"],
     "receptor": ["C3AR1", "C5AR1", "C5AR2", "CR1", "CR2", "ITGAM", "ITGAX", "VSIG4"],
-    "regulator": [
-        "CFH",
-        "CFHR1",
-        "CFHR2",
-        "CFHR3",
-        "CFHR4",
-        "CFHR5",
-        "CFI",
-        "CD46",
-        "CD55",
-        "CD59",
-        "SERPING1",
-    ],
+    "regulator": ["CFH", "CFI", "CD46", "CD55", "CD59", "SERPING1"],
+}
+
+# CFHR genes are descriptive only and intentionally excluded from complement
+# pathway composites/tests because they do not share a uniform inhibitory
+# direction with canonical regulators.
+descriptive_complement_programs = {
+    "cfhr": ["CFHR1", "CFHR2", "CFHR3", "CFHR4", "CFHR5"],
 }
 
 inflammasome_programs = {
@@ -627,6 +611,8 @@ def subset_pseudobulk_to_groups(pb, group1, group2):
     }
 
 
+de_design_manifest_rows = []
+
 def run_pydeseq2(pb, keep_genes, group1, group2, name):
     """Runs PyDESeq2 using the adpbulk DataFrame."""
     # Subset to passing genes and cast to int for PyDESeq2
@@ -638,6 +624,11 @@ def run_pydeseq2(pb, keep_genes, group1, group2, name):
         [disease_key] + [c for c in adjustment_covariates if c in pb["meta"]]
     ].copy()
     metadata.index = counts_df.index
+    available_metadata = metadata.copy()
+    available_counts_df = counts_df.copy()
+    candidate_design_terms = [c for c in adjustment_covariates if c in metadata.columns]
+    dropped_complete_case_ids = []
+    used_unadjusted_fallback = False
 
     # Complete-case filtering: a covariate with a missing value (NaN,
     # preserved as such by build_donor_pseudobulk) excludes that pseudobulk
@@ -645,7 +636,7 @@ def run_pydeseq2(pb, keep_genes, group1, group2, name):
     # NaN into a categorical design term. Different contrasts may drop
     # different samples depending on which covariates were audited as
     # usable and which donors have missing values for them.
-    design_terms = [c for c in adjustment_covariates if c in metadata.columns]
+    design_terms = candidate_design_terms.copy()
     if design_terms:
         complete_mask = metadata[design_terms].notna().all(axis=1)
         n_dropped = int((~complete_mask).sum())
@@ -655,6 +646,7 @@ def run_pydeseq2(pb, keep_genes, group1, group2, name):
                 f"covariate value(s) in {design_terms}: "
                 f"{metadata.loc[~complete_mask].index.tolist()}"
             )
+            dropped_complete_case_ids = metadata.index[~complete_mask].astype(str).tolist()
             metadata = metadata.loc[complete_mask]
             counts_df = counts_df.loc[metadata.index]
 
@@ -674,10 +666,10 @@ def run_pydeseq2(pb, keep_genes, group1, group2, name):
                 f"(~ {disease_key}) for this contrast; original covariate-complete "
                 f"metadata is discarded for THIS contrast only."
             )
-            metadata = pb["meta"][[disease_key]].copy()
-            metadata.index = pb["counts_df"].index
-            counts_df = pb["counts_df"].iloc[:, keep_genes].copy()
-            counts_df = np.rint(counts_df).astype(np.int64)
+            used_unadjusted_fallback = True
+            metadata = available_metadata[[disease_key]].copy()
+            counts_df = available_counts_df.copy()
+            dropped_complete_case_ids = []
             design_terms = []
 
     # Explicitly set category order so group2 is always the reference
@@ -797,6 +789,38 @@ def run_pydeseq2(pb, keep_genes, group1, group2, name):
     res["deseq2_design"] = design_formula
     res["deseq2_n_genes_tested"] = int(keep_genes.sum())
 
+    fitted_group = metadata[disease_key].astype(str)
+    fitted_ids_group1 = metadata.index[fitted_group == group1].astype(str).tolist()
+    fitted_ids_group2 = metadata.index[fitted_group == group2].astype(str).tolist()
+    meta_by_index = pb["meta"].copy()
+    meta_by_index.index = pb["counts_df"].index
+    fitted_cells_group1 = int(meta_by_index.loc[fitted_ids_group1, "n_cells"].sum()) if fitted_ids_group1 else 0
+    fitted_cells_group2 = int(meta_by_index.loc[fitted_ids_group2, "n_cells"].sum()) if fitted_ids_group2 else 0
+
+    manifest = {
+        "comparison_id": name,
+        "group1": group1,
+        "group2": group2,
+        "candidate_covariates": ";".join(candidate_design_terms),
+        "final_covariates": ";".join([x for x in design_terms if x != disease_key]),
+        "complete_case_dropped_ids": ";".join(dropped_complete_case_ids),
+        "n_complete_case_dropped": len(dropped_complete_case_ids),
+        "used_unadjusted_fallback": used_unadjusted_fallback,
+        "design_formula": design_formula,
+        "n_genes_tested": int(keep_genes.sum()),
+        "n_fitted_group1": len(fitted_ids_group1),
+        "n_fitted_group2": len(fitted_ids_group2),
+        "n_fitted_nuclei_group1": fitted_cells_group1,
+        "n_fitted_nuclei_group2": fitted_cells_group2,
+        "fitted_ids_group1": ";".join(fitted_ids_group1),
+        "fitted_ids_group2": ";".join(fitted_ids_group2),
+    }
+    de_design_manifest_rows.append(manifest)
+
+    for key, value in manifest.items():
+        if key not in {"fitted_ids_group1", "fitted_ids_group2", "complete_case_dropped_ids"}:
+            res[f"model_{key}"] = value
+
     return res
 
 
@@ -837,6 +861,7 @@ def run_pseudobulk_de(spec):
     # Metadata bindings
     out["comparison_id"] = name
     out["comparison"] = f"{group1} vs {group2}"
+    out["population"] = spec.get("population", "global")
     out["is_de_primary_q_0_05"] = out["deseq2_q_value"] <= 0.05
 
     # Donor/cell counts actually contributing to THIS pseudobulk comparison
@@ -878,6 +903,14 @@ pseudobulk_results = {}
 for spec in comparison_specs:
     pseudobulk_results[spec["name"]] = run_pseudobulk_de(spec)
 
+def write_de_design_manifest():
+    manifest_df = pd.DataFrame(de_design_manifest_rows)
+    manifest_path = OUTPUT_DIR / "de_design_manifest.csv"
+    manifest_df.to_csv(manifest_path, index=False)
+    print(f"DE design manifest -> {manifest_path.name}: {len(manifest_df)} fitted contrast(s)")
+    return manifest_df
+
+_de_design_manifest = write_de_design_manifest()
 print("Global pseudobulk DE pipeline completed.")
 
 
@@ -1327,3 +1360,162 @@ else:
     print(
         "run_subclasslevel1_targeted_de = False; skipping targeted SubclassLevel1 DE."
     )
+
+
+# Rewrite after all optional targeted comparisons so the manifest is complete.
+# IMPORTANT for interactive/restart workflows: targeted DE files may already
+# exist and therefore be skipped above. Reconstruct one manifest row from each
+# existing DE CSV as well, using the model_* metadata embedded in those files.
+def rebuild_de_design_manifest_from_outputs():
+    rows_by_id = {str(r["comparison_id"]): dict(r) for r in de_design_manifest_rows}
+
+    for path in sorted(OUTPUT_DIR.glob("pseudobulk_de_*.csv")):
+        try:
+            df = pd.read_csv(path, nrows=1)
+        except Exception as exc:
+            print(f"WARNING: could not inspect {path.name} for design manifest: {exc}")
+            continue
+        if df.empty or "comparison_id" not in df.columns:
+            continue
+
+        comparison_id = str(df["comparison_id"].iloc[0])
+        # Newly run comparisons already have the richer in-memory manifest,
+        # including fitted donor IDs. Existing files still contain all fields
+        # needed for manuscript/reporting denominators and design formulas.
+        if comparison_id in rows_by_id:
+            continue
+
+        def first(col, default=np.nan):
+            return df[col].iloc[0] if col in df.columns else default
+
+        comparison = str(first("comparison", ""))
+        if " vs " in comparison:
+            group1, group2 = comparison.split(" vs ", 1)
+        else:
+            group1, group2 = "", ""
+
+        rows_by_id[comparison_id] = {
+            "comparison_id": comparison_id,
+            "group1": group1,
+            "group2": group2,
+            "candidate_covariates": first("model_candidate_covariates", ""),
+            "final_covariates": first("model_final_covariates", ""),
+            "complete_case_dropped_ids": "",  # not embedded in gene-level CSV
+            "n_complete_case_dropped": first("model_n_complete_case_dropped", np.nan),
+            "used_unadjusted_fallback": first("model_used_unadjusted_fallback", np.nan),
+            "design_formula": first("model_design_formula", first("deseq2_design", "")),
+            "n_genes_tested": first("model_n_genes_tested", first("deseq2_n_genes_tested", np.nan)),
+            "n_fitted_group1": first("model_n_fitted_group1", np.nan),
+            "n_fitted_group2": first("model_n_fitted_group2", np.nan),
+            "n_fitted_nuclei_group1": first("model_n_fitted_nuclei_group1", np.nan),
+            "n_fitted_nuclei_group2": first("model_n_fitted_nuclei_group2", np.nan),
+            "fitted_ids_group1": "",  # available only for comparisons fit in this process
+            "fitted_ids_group2": "",
+            "source_file": path.name,
+        }
+
+    manifest_df = pd.DataFrame(rows_by_id.values())
+    if not manifest_df.empty:
+        # Parse targeted population for convenient Supplementary-table use.
+        prefix = "targeted_SubclassLevel1_"
+        def parse_population(cid):
+            cid = str(cid)
+            if not cid.startswith(prefix):
+                return "global"
+            tail = cid[len(prefix):]
+            for suffix in ["_ckd_vs_normal", "_aki_vs_normal", "_aki_vs_ckd"]:
+                if tail.endswith(suffix):
+                    return tail[:-len(suffix)]
+            return tail
+        manifest_df.insert(1, "population", manifest_df["comparison_id"].map(parse_population))
+        manifest_df = manifest_df.sort_values(["population", "comparison_id"]).reset_index(drop=True)
+    path = OUTPUT_DIR / "de_design_manifest.csv"
+    manifest_df.to_csv(path, index=False)
+    print(f"Complete DE design manifest -> {path.name}: {len(manifest_df)} models")
+    return manifest_df
+
+_de_design_manifest = rebuild_de_design_manifest_from_outputs()
+
+# Compact complement-only publication/reviewer table.
+# Includes ALL tested genes from the finalized non-overlapping complement
+# modules, not just significant genes, so null denominators are auditable.
+_complement_gene_to_module = {
+    gene: module
+    for module, genes in complement_programs.items()
+    for gene in genes
+}
+_complement_symbols = set(_complement_gene_to_module)
+
+_complement_tables = []
+for _path in sorted(OUTPUT_DIR.glob("pseudobulk_de_*.csv")):
+    try:
+        _df = pd.read_csv(_path)
+    except Exception as _exc:
+        print(f"WARNING: could not read {_path.name} for complement table: {_exc}")
+        continue
+    if "gene_symbol" not in _df.columns:
+        continue
+    _sub = _df[_df["gene_symbol"].astype(str).isin(_complement_symbols)].copy()
+    if _sub.empty:
+        continue
+    _sub["complement_module"] = _sub["gene_symbol"].astype(str).map(_complement_gene_to_module)
+    _sub["source_file"] = _path.name
+    _complement_tables.append(_sub)
+
+if _complement_tables:
+    _comp_de = pd.concat(_complement_tables, ignore_index=True, sort=False)
+    _compact_cols = [c for c in [
+        "population", "comparison_id", "comparison", "gene_id", "gene_symbol",
+        "complement_module", "passes_expression_filter",
+        "total_pseudobulk_count", "detected_pseudobulk_donors",
+        "deseq2_base_mean", "deseq2_log2fc_mle", "deseq2_lfc_se_mle",
+        "deseq2_log2fc_shrunk", "deseq2_lfc_se_shrunk", "deseq2_log2fc",
+        "deseq2_lfc_se", "deseq2_lfc_shrunk_applied",
+        "deseq2_p_value", "deseq2_q_value", "is_de_primary_q_0_05",
+        "model_n_fitted_group1", "model_n_fitted_group2",
+        "model_n_fitted_nuclei_group1", "model_n_fitted_nuclei_group2",
+        "model_candidate_covariates", "model_final_covariates",
+        "model_n_complete_case_dropped", "model_used_unadjusted_fallback",
+        "model_design_formula", "source_file"
+    ] if c in _comp_de.columns]
+    _comp_de = _comp_de[_compact_cols].sort_values(
+        [c for c in ["population", "comparison_id", "complement_module", "gene_symbol"] if c in _compact_cols]
+    )
+    _comp_path = OUTPUT_DIR / "complement_de_publication_table.csv"
+    _comp_de.to_csv(_comp_path, index=False)
+    print(
+        f"Complement DE publication table -> {_comp_path.name}: "
+        f"{len(_comp_de)} rows, {_comp_de['comparison_id'].nunique()} comparisons"
+    )
+else:
+    print("WARNING: no complement-gene DE rows found; complement publication table not written.")
+
+# The full reviewer table is optional because it can be hundreds of MB.
+# Leave generation disabled by default; the compact complement table above is
+# the manuscript/reviewer-facing output needed for this project.
+write_full_reviewer_de_table = False
+if write_full_reviewer_de_table:
+    _de_tables = []
+    for _path in sorted(OUTPUT_DIR.glob("pseudobulk_de_*.csv")):
+        try:
+            _df = pd.read_csv(_path)
+            _df["source_file"] = _path.name
+            _de_tables.append(_df)
+        except Exception as _exc:
+            print(f"WARNING: could not read {_path.name} for combined DE table: {_exc}")
+    if _de_tables:
+        _all_de = pd.concat(_de_tables, ignore_index=True, sort=False)
+        _all_de.to_csv(OUTPUT_DIR / "all_pseudobulk_de_results.csv", index=False)
+        _cols = [c for c in [
+            "population", "comparison_id", "comparison", "gene_id", "gene_symbol",
+            "deseq2_base_mean", "deseq2_log2fc_mle", "deseq2_lfc_se_mle",
+            "deseq2_log2fc_shrunk", "deseq2_lfc_se_shrunk", "deseq2_log2fc",
+            "deseq2_p_value", "deseq2_q_value", "is_de_primary_q_0_05",
+            "total_pseudobulk_count", "detected_pseudobulk_donors",
+            "model_n_fitted_group1", "model_n_fitted_group2",
+            "model_n_fitted_nuclei_group1", "model_n_fitted_nuclei_group2",
+            "model_final_covariates", "model_used_unadjusted_fallback",
+            "model_design_formula", "source_file"
+        ] if c in _all_de.columns]
+        _all_de[_cols].to_csv(OUTPUT_DIR / "reviewer_de_results_long.csv", index=False)
+        print("Full reviewer-ready DE tables written.")
