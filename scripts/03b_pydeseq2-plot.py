@@ -41,25 +41,29 @@ plt.ioff()
 # its cache, so this is checked explicitly below rather than left to chance.
 ####
 FONT_SIZES = {
-    "annotation": 4,  # gene-symbol point labels (leader-line annotations)
-    "direction_text": 8,  # "Higher in X" corner labels on volcano plots
+    "annotation": 6,       # intentionally small for dense volcano labels (less strict than PLOS)
+    "direction_text": 8,
+    "meta_text": 7,
     "legend": 8,
     "axis_label": 10,
-    "tick_label": 9,
+    "tick_label": 8,
     "panel_title": 11,
-    "figure_title": 12,  # PLOS max; consider dropping suptitles entirely -
-    # PLOS asks that figure titles/captions live in the manuscript, not the
-    # image file, so "Global pseudobulk DE" as a suptitle is borderline.
+    "panel_letter": 12,
+    "figure_title": 12,
 }
 
 FIGURE_SIZES = {
-    "single_volcano": (5.2, 4.6),  # PLOS column width (13.2cm)
-    "triptych_panel_width": 2.45,  # 3 panels -> 7.35in, under 7.5in page max
-    "triptych_panel_height": 4.2,
-    "subclasslevel1_panel_width": 2.45,
-    "triptych_legend_margin": 0.15,
-    "concordance": (5.2, 4.6),  # PLOS column width
-    "pathway_summary_width": 5.2,  # PLOS column width
+    "single_volcano": (5.2, 3.85),
+    # Three 2.5-in panels = 7.5 in, the full-page PLOS width target.
+    "triptych_panel_width": 2.50,
+    # Slightly taller than v6 to return closer to the preferred v5 plotting
+    # shape while still avoiding the overly tall early-panel appearance.
+    "triptych_panel_height": 3.65,
+    "subclasslevel1_panel_width": 2.50,
+    # Fraction of figure height reserved below the axes for the shared legend.
+    "triptych_legend_margin": 0.22,
+    "concordance": (5.2, 4.6),
+    "pathway_summary_width": 5.2,
     "pathway_summary_row_height": 0.35,
     "pathway_summary_base_height": 1.6,
     "pathway_summary_min_height": 4.0,
@@ -75,6 +79,14 @@ MARKER_SIZES = {
     "inflammasome_pathway_only": 60,
     "concordance_pathway": 48,
 }
+# Manuscript triptych geometry: preserve the same absolute volcano-axes area
+# for global and SubclassLevel1 triptychs. A subclass title receives extra
+# canvas height above the axes instead of shrinking the plotting region.
+TRIPTYCH_BASE_HEIGHT = FIGURE_SIZES["triptych_panel_height"]
+TRIPTYCH_TITLE_EXTRA_HEIGHT = 0.48
+TRIPTYCH_BOTTOM_IN = 0.305 * TRIPTYCH_BASE_HEIGHT
+TRIPTYCH_TOP_IN = 0.865 * TRIPTYCH_BASE_HEIGHT
+
 PATHWAY_MARKER_SCALE = 0.25  # multiplies every "*_pathway*" entry above - tune
 # this single number to size the complement/inflammasome pathway markers up
 # or down without touching each scatter() call individually.
@@ -138,6 +150,9 @@ concordance_dir.mkdir(parents=True, exist_ok=True)
 pathway_level_dir = PLOT_DIR / "pathway_level"
 pathway_level_dir.mkdir(parents=True, exist_ok=True)
 
+complement_landscape_dir = PLOT_DIR / "complement_landscape"
+complement_landscape_dir.mkdir(parents=True, exist_ok=True)
+
 background_color = "#d1d5db"
 
 # %%
@@ -145,19 +160,35 @@ background_color = "#d1d5db"
 # > Complement + inflammasome gene sets used to annotate volcano plots
 ####
 complement_programs = {
-    # Final non-overlapping definitions synchronized with 02b/02c/03a.
-    "classical": ["C1QA", "C1QB", "C1QC", "C1R", "C1S", "C2", "C4A", "C4B", "C4BPA", "C4BPB"],
+    "classical": [
+        "C1QA",
+        "C1QB",
+        "C1QC",
+        "C1R",
+        "C1S",
+        "C2",
+        "C4A",
+        "C4B",
+        "C4BPA",
+        "C4BPB",
+    ],
     "lectin": ["MBL2", "FCN1", "FCN2", "FCN3", "MASP1", "MASP2", "MASP3"],
-    "alternative": ["C3", "CFB", "CFD", "CFP"],
-    "terminal": ["C5", "C6", "C7", "C8A", "C8B", "C8G", "C9"],
+    "alternative": ["C3", "CFB", "CFD", "CFP", "C3AR1"],
+    "terminal": ["C5", "C5AR1", "C5AR2", "C6", "C7", "C8A", "C8B", "C8G", "C9"],
     "receptor": ["C3AR1", "C5AR1", "C5AR2", "CR1", "CR2", "ITGAM", "ITGAX", "VSIG4"],
-    "regulator": ["CFH", "CFI", "CD46", "CD55", "CD59", "SERPING1"],
-}
-
-# CFHR1-5 are descriptive only and are excluded from the six inferential
-# complement programs/composites.
-descriptive_complement_programs = {
-    "cfhr": ["CFHR1", "CFHR2", "CFHR3", "CFHR4", "CFHR5"],
+    "regulator": [
+        "CFH",
+        "CFHR1",
+        "CFHR2",
+        "CFHR3",
+        "CFHR4",
+        "CFHR5",
+        "CFI",
+        "CD46",
+        "CD55",
+        "CD59",
+        "SERPING1",
+    ],
 }
 
 complement_pathway_palette = {
@@ -261,9 +292,19 @@ inflammasome_program_priority = [
 def build_gene_set_program_table(programs, priority):
     """Maps each gene to all programs it belongs to, plus one stable 'primary' program.
 
-    Complement modules are non-overlapping in the finalized pipeline. The
-    priority list is retained only as a stable plotting convention and should
-    not alter module membership or statistical results.
+    NOTE on Reviewer 2 #4 (gene double-counting across modules, e.g. C3AR1
+    in both 'alternative' and 'receptor'; C5AR1/C5AR2 in both 'terminal' and
+    'receptor'): the `priority` list here only controls which SINGLE color
+    a multi-membership gene is drawn with on these volcano/concordance
+    plots, so each point has one stable visual identity. It does NOT
+    resolve the underlying statistical double-counting the reviewer is
+    concerned about - that lives in whatever script computes the composite
+    module/activation-index SCORES (sc.tl.score_genes per module, summed
+    into an activation index), where a gene appearing in multiple modules
+    genuinely gets counted more than once in the composite. That needs to
+    be fixed at the scoring step, not here. multi_membership_genes.csv
+    (written below) documents every affected gene and its assigned
+    programs so the scope of the issue is visible.
     """
     rows = []
     for program, genes in programs.items():
@@ -372,6 +413,19 @@ def pretty_subclasslevel1_label(value):
     return key.replace("_", " ")
 
 
+# Stable kidney/cell-compartment order for cross-cell-type summary plots.
+# Unknown/new subclasses are appended alphabetically rather than dropped.
+SUBCLASSLEVEL1_PLOT_ORDER = [
+    "PT", "TAL", "DTL", "ATL", "DCT", "CNT", "PC", "IC",
+    "EC", "FIB", "VSM_P", "POD", "PEC", "PapE",
+    "Myeloid", "Lymphoid", "NEU", "Ad",
+]
+
+
+def compact_subclasslevel1_label(value):
+    return str(value).replace("_", "/")
+
+
 # %%
 # SHARED LABEL/HELPER UTILITIES
 ####
@@ -443,8 +497,8 @@ def finalize_gene_labels(ax, texts, avoid_x=None, avoid_y=None):
         texts,
         ax=ax,
         arrowprops={"arrowstyle": "-", "lw": 0.35, "color": "#6b7280", "alpha": 0.7},
-        expand=(1.35, 1.6),
-        force_text=(0.4, 0.6),
+        expand=(1.45, 1.8),
+        force_text=(0.45, 0.75),
         **avoid_kwargs,
     )
 
@@ -650,6 +704,115 @@ def get_panel_annotation(table_id, gene_set_name):
     )
 
 
+def get_panel_counts(table_id, gene_set_name):
+    """Return numeric donor/nucleus denominators for one plotted DE table.
+
+    Keeping this separate from the display-string helper makes it possible
+    to put donor counts beside the directional labels and nucleus counts in
+    the compact panel header without parsing text back into numbers.
+    """
+    match = gene_count_denominator_table[
+        (gene_count_denominator_table["table_id"] == table_id)
+        & (gene_count_denominator_table["gene_set"] == gene_set_name)
+    ]
+    if match.empty:
+        return None
+
+    r = match.iloc[0]
+    out = {}
+    for key in [
+        "n_donors_group1",
+        "n_donors_group2",
+        "n_cells_group1",
+        "n_cells_group2",
+    ]:
+        value = r.get(key, np.nan)
+        out[key] = int(value) if pd.notna(value) else None
+    return out
+
+
+def add_compact_volcano_header(
+    ax,
+    title,
+    n_sig,
+    n_tested,
+    counts=None,
+    panel_letter=None,
+    q_threshold=0.05,
+    gene_set_label="complement",
+):
+    """Right-aligned manuscript-style panel header.
+
+    The contrast title, donor counts, nuclei counts, and significant-gene
+    counts are stacked and right-aligned to the volcano plot frame.
+    """
+    ax.text(
+        0.995,
+        1.155,
+        title,
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=FONT_SIZES["panel_title"],
+        fontweight="bold",
+        clip_on=False,
+    )
+
+    if counts is not None and counts.get("n_donors_group1") is not None:
+        donor_text = (
+            f"n donors: {counts['n_donors_group1']} vs {counts['n_donors_group2']}"
+        )
+        ax.text(
+            0.995,
+            1.103,
+            donor_text,
+            transform=ax.transAxes,
+            ha="right",
+            va="bottom",
+            fontsize=FONT_SIZES["meta_text"],
+            clip_on=False,
+        )
+
+    if counts is not None and counts.get("n_cells_group1") is not None:
+        nuclei_text = (
+            f"nuclei: {counts['n_cells_group1']:,} vs {counts['n_cells_group2']:,}"
+        )
+        ax.text(
+            0.995,
+            1.052,
+            nuclei_text,
+            transform=ax.transAxes,
+            ha="right",
+            va="bottom",
+            fontsize=FONT_SIZES["meta_text"],
+            clip_on=False,
+        )
+
+    ax.text(
+        0.995,
+        1.001,
+        f"{gene_set_label} q<{q_threshold:g}: {n_sig}/{n_tested}",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=FONT_SIZES["meta_text"],
+        clip_on=False,
+    )
+
+    if panel_letter:
+        ax.text(
+            -0.075,
+            1.070,
+            str(panel_letter),
+            transform=ax.transAxes,
+            ha="left",
+            va="center",
+            fontsize=FONT_SIZES["panel_letter"],
+            fontweight="bold",
+            clip_on=False,
+        )
+
+
 # %%
 # COMPLEMENT-AWARE VOLCANO HELPERS
 ####
@@ -731,6 +894,7 @@ def plot_complement_aware_volcano(
     ax=None,
     show_legend=True,
     table_id=None,
+    panel_letter=None,
 ):
     plot_df = prepare_complement_volcano_df(df)
     if complement_only:
@@ -748,6 +912,8 @@ def plot_complement_aware_volcano(
     bg = plot_df[~plot_df["is_complement"]]
     comp = plot_df[plot_df["is_complement"]]
 
+    # Background gene cloud. The rasterized background keeps PDF size sane;
+    # pathway markers, labels, axes, and guide lines remain vector objects.
     if not complement_only and not bg.empty:
         ax.scatter(
             bg["primary_log2fc"],
@@ -757,6 +923,7 @@ def plot_complement_aware_volcano(
             alpha=0.35,
             linewidths=0,
             rasterized=True,
+            zorder=1,
         )
         bg_sig = bg[bg["is_de_primary_q_0_05"].fillna(False)]
         if not bg_sig.empty:
@@ -768,8 +935,10 @@ def plot_complement_aware_volcano(
                 alpha=0.55,
                 linewidths=0,
                 rasterized=True,
+                zorder=2,
             )
 
+    # Complement pathway overlay.
     for pathway, color in complement_pathway_palette.items():
         sub = comp[comp["primary_complement_pathway"] == pathway]
         if sub.empty:
@@ -790,39 +959,67 @@ def plot_complement_aware_volcano(
             linewidths=0.45,
             alpha=0.92,
             label=pathway,
+            zorder=4,
         )
 
-    ax.axhline(-np.log10(q_threshold), color="#111827", lw=0.8, ls="--", alpha=0.55)
-    ax.axvline(-lfc_threshold, color="#111827", lw=0.8, ls=":", alpha=0.45)
-    ax.axvline(lfc_threshold, color="#111827", lw=0.8, ls=":", alpha=0.45)
-    ax.axvline(0, color="#111827", lw=0.8, alpha=0.55)
+    # Statistical/effect-size guides.
+    ax.axhline(
+        -np.log10(q_threshold), color="#111827", lw=0.8, ls="--", alpha=0.55, zorder=3
+    )
+    ax.axvline(-lfc_threshold, color="#111827", lw=0.8, ls=":", alpha=0.45, zorder=3)
+    ax.axvline(lfc_threshold, color="#111827", lw=0.8, ls=":", alpha=0.45, zorder=3)
+    ax.axvline(0, color="#111827", lw=0.8, alpha=0.55, zorder=3)
 
-    left_label, right_label = get_direction_labels(plot_df, comparison_id)
-    y_top = plot_df["plot_y"].quantile(0.995)
-    x_min, x_max = np.nanpercentile(plot_df["primary_log2fc"], [0.5, 99.5])
+    # Counts are sourced from the same denominator table used for the
+    # manuscript/reporting audit. Negative LFC = group2; positive LFC = group1.
+    counts = get_panel_counts(table_id, "complement") if table_id else None
+    group1, group2 = get_contrast_labels(plot_df, comparison_id)
+
+    left_label = f"Higher in {group2}"
+    right_label = f"Higher in {group1}"
+
+    # Place direction labels vertically inside the left/right panel edges so
+    # they no longer compete with gene labels or the compact header.
+    side_label_y = 0.82
+    left_side_label_x = 0.065
+    right_side_label_x = 0.935
     ax.text(
-        x_min,
-        y_top,
+        left_side_label_x,
+        side_label_y,
         left_label,
-        ha="left",
-        va="bottom",
+        transform=ax.transAxes,
+        rotation=90,
+        rotation_mode="anchor",
+        ha="right",
+        va="center",
         fontsize=FONT_SIZES["direction_text"],
         color="#374151",
+        clip_on=False,
+        zorder=6,
     )
     ax.text(
-        x_max,
-        y_top,
+        right_side_label_x,
+        side_label_y,
         right_label,
+        transform=ax.transAxes,
+        rotation=90,
+        rotation_mode="anchor",
         ha="right",
-        va="bottom",
+        va="center",
         fontsize=FONT_SIZES["direction_text"],
         color="#374151",
+        clip_on=False,
+        zorder=6,
     )
 
+    # Gene labels: keep the original ranking logic, but let adjustText solve
+    # the final positions after complement and background labels are combined.
     comp_to_label = comp[
         (comp["primary_q_value"] <= 0.10) | (comp["abs_lfc"] >= lfc_threshold)
     ].sort_values(["primary_q_value", "abs_lfc"], ascending=[True, False])
-    gene_labels = label_ranked_genes(ax, comp_to_label, max_labels=label_top_complement)
+    gene_labels = label_ranked_genes(
+        ax, comp_to_label, max_labels=label_top_complement
+    )
 
     if not complement_only and label_top_background:
         bg_to_label = bg.sort_values(
@@ -834,42 +1031,50 @@ def plot_complement_aware_volcano(
         )
 
     finalize_gene_labels(
-        ax, gene_labels, avoid_x=plot_df["primary_log2fc"], avoid_y=plot_df["plot_y"]
+        ax,
+        gene_labels,
+        avoid_x=plot_df["primary_log2fc"],
+        avoid_y=plot_df["plot_y"],
     )
 
     n_comp_sig = int((comp["primary_q_value"] <= q_threshold).sum())
     n_comp = int(len(comp))
     title = title or comparison_title_map.get(comparison_id, comparison_id)
-    suffix = (
-        "complement genes only"
-        if complement_only
-        else "all genes with complement overlay"
+
+    add_compact_volcano_header(
+        ax,
+        title=title,
+        n_sig=n_comp_sig,
+        n_tested=n_comp,
+        counts=counts,
+        panel_letter=panel_letter,
+        q_threshold=q_threshold,
+        gene_set_label="complement",
     )
-    # Panel annotation (donor/cell counts) sourced from
-    # figure_gene_count_denominators.csv - see the block above where it's
-    # built - so this always matches what's reported in the manuscript
-    # text/supplementary tables rather than drifting independently.
-    annotation = get_panel_annotation(table_id, "complement") if table_id else None
-    count_line = f"complement q<{q_threshold}: {n_comp_sig}/{n_comp} tested"
-    title_text = f"{title}\n{suffix} | {count_line}"
-    if annotation:
-        title_text += f"\n{annotation}"
-    ax.set_title(title_text, fontsize=FONT_SIZES["panel_title"])
-    ax.set_xlabel(get_xaxis_label(plot_df, comparison_id))
-    ax.set_ylabel("-log10 BH-adjusted q-value, DESeq2")
-    ax.grid(True, alpha=0.14)
+
+    # Deliberately concise labels: contrast direction is already communicated
+    # by the panel title and vertical side annotations.
+    ax.set_xlabel(r"primary log$_2$ fold change")
+    ax.set_ylabel(r"$-\log_{10}$ primary BH q-value")
+    ax.grid(True, alpha=0.14, zorder=0)
+
     if show_legend:
         add_complement_legend(ax, include_background=not complement_only)
 
     if made_fig:
-        fig.tight_layout()
+        # Standalone panels still reserve enough headroom for the compact header.
+        fig.tight_layout(rect=[0, 0, 1, 0.93])
         fig.savefig(
-            complement_volcano_dir / f"{out_prefix}.png", dpi=EXPORT_DPI, bbox_inches="tight"
+            complement_volcano_dir / f"{out_prefix}.png",
+            dpi=EXPORT_DPI,
+            bbox_inches="tight",
         )
         fig.savefig(
-            complement_volcano_dir / f"{out_prefix}.pdf", dpi=EXPORT_DPI, bbox_inches="tight"
+            complement_volcano_dir / f"{out_prefix}.pdf",
+            dpi=EXPORT_DPI,
+            bbox_inches="tight",
         )
-        plt.show()
+        plt.close(fig)
     return ax
 
 
@@ -884,8 +1089,8 @@ def plot_complement_volcano_triptych(
     table_id_map=None,
     figure_title=None,
     output_stem="global_complement_aware_volcano_triptych",
-    label_top_complement=10,
-    label_top_background=2,
+    label_top_complement=8,
+    label_top_background=1,
     figsize_per_panel=FIGURE_SIZES["triptych_panel_width"],
     pathway_only=False,
 ):
@@ -901,16 +1106,23 @@ def plot_complement_volcano_triptych(
         print(f"No comparison tables available for {output_stem}.")
         return None
 
+    # Keep the volcano plotting area identical between global and subclass
+    # figures. A figure-level title adds canvas above the axes rather than
+    # reducing their height.
+    fig_height = TRIPTYCH_BASE_HEIGHT + (
+        TRIPTYCH_TITLE_EXTRA_HEIGHT if figure_title else 0.0
+    )
     fig, axes = plt.subplots(
         1,
         len(available),
-        figsize=(figsize_per_panel * len(available), FIGURE_SIZES["triptych_panel_height"]),
+        figsize=(figsize_per_panel * len(available), fig_height),
         sharey=False,
     )
     if len(available) == 1:
         axes = [axes]
 
-    for ax, comparison_id in zip(axes, available):
+    panel_letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for i, (ax, comparison_id) in enumerate(zip(axes, available)):
         table_id = table_id_map[comparison_id]
         plot_complement_aware_volcano(
             tables[table_id],
@@ -923,31 +1135,79 @@ def plot_complement_volcano_triptych(
             ax=ax,
             show_legend=False,
             table_id=table_id,
+            panel_letter=panel_letters[i] if i < len(panel_letters) else str(i + 1),
         )
+        ax.set_xlabel("")
+        ax.set_ylabel("")
 
     if figure_title:
-        fig.suptitle(figure_title, y=1.03, fontsize=FONT_SIZES["figure_title"])
+        fig.suptitle(
+            figure_title,
+            x=0.5,
+            y=0.975,
+            ha="center",
+            fontsize=FONT_SIZES["figure_title"],
+            fontweight="normal",
+        )
 
-    # Reserve space at the bottom for one shared legend instead of a
-    # per-panel legend (all three panels share the same pathway/color key).
-    fig.tight_layout(rect=[0, FIGURE_SIZES["triptych_legend_margin"], 1, 1])
-    legend_handles = build_complement_legend_handles(include_background=not pathway_only)
-    fig.legend(
+    # Convert fixed absolute margins to figure fractions so axes geometry is
+    # unchanged when the subclass title adds height above the panels.
+    bottom_frac = TRIPTYCH_BOTTOM_IN / fig_height
+    top_frac = TRIPTYCH_TOP_IN / fig_height
+    fig.subplots_adjust(
+        left=0.085,
+        right=0.990,
+        bottom=bottom_frac,
+        top=top_frac,
+        wspace=0.18,
+    )
+
+    # Shared axis labels and legend use absolute positions relative to the
+    # preserved global geometry, converted to fractions for titled figures.
+    fig.supxlabel(
+        r"primary log$_2$ fold change",
+        fontsize=FONT_SIZES["axis_label"],
+        y=(0.145 * TRIPTYCH_BASE_HEIGHT) / fig_height,
+    )
+    fig.supylabel(
+        r"$-\log_{10}$ primary BH q-value",
+        fontsize=FONT_SIZES["axis_label"],
+        x=0.012,
+    )
+
+    legend_handles = build_complement_legend_handles(
+        include_background=not pathway_only
+    )
+    legend = fig.legend(
         handles=legend_handles,
         loc="lower center",
         ncol=len(legend_handles),
-        frameon=False,
+        frameon=True,
+        fancybox=False,
         fontsize=FONT_SIZES["legend"],
-        bbox_to_anchor=(0.5, 0.0),
+        bbox_to_anchor=(0.5, (0.068 * TRIPTYCH_BASE_HEIGHT) / fig_height),
+        borderpad=0.35,
+        handletextpad=0.6,
+        columnspacing=1.25,
     )
+    legend.get_frame().set_facecolor("white")
+    legend.get_frame().set_edgecolor("#111827")
+    legend.get_frame().set_linewidth(0.8)
+    legend.get_frame().set_alpha(1.0)
 
     fig.savefig(
-        complement_volcano_dir / f"{output_stem}.png", dpi=EXPORT_DPI, bbox_inches="tight"
+        complement_volcano_dir / f"{output_stem}.png",
+        dpi=EXPORT_DPI,
+        bbox_inches="tight",
+        facecolor="white",
     )
     fig.savefig(
-        complement_volcano_dir / f"{output_stem}.pdf", dpi=EXPORT_DPI, bbox_inches="tight"
+        complement_volcano_dir / f"{output_stem}.pdf",
+        dpi=EXPORT_DPI,
+        bbox_inches="tight",
+        facecolor="white",
     )
-    plt.show()
+    plt.close(fig)
     return fig
 
 
@@ -957,7 +1217,7 @@ def plot_global_complement_volcano_triptych(
     return plot_complement_volcano_triptych(
         tables,
         comparison_ids=comparison_ids,
-        figure_title="Global pseudobulk DE",
+        figure_title=None,
         output_stem="global_complement_aware_volcano_triptych",
     )
 
@@ -973,7 +1233,7 @@ def plot_global_complement_pathway_only_volcano_triptych(
     return plot_complement_volcano_triptych(
         tables,
         comparison_ids=comparison_ids,
-        figure_title="Global pseudobulk DE - complement genes only",
+        figure_title=None,
         output_stem="global_complement_only_volcano_triptych",
         label_top_complement=30,
         label_top_background=0,
@@ -1044,7 +1304,7 @@ def plot_subclasslevel1_complement_triptychs(
             output_stem=output_stem,
             label_top_complement=9 if not pathway_only else 20,
             label_top_background=1 if not pathway_only else 0,
-            figsize_per_panel=FIGURE_SIZES["subclasslevel1_panel_width"],
+            figsize_per_panel=FIGURE_SIZES["triptych_panel_width"],
             pathway_only=pathway_only,
         )
         manifest.append(
@@ -1078,6 +1338,337 @@ if subclasslevel1_triptych_manifest.empty:
     print(
         "No SubclassLevel1 targeted DE tables found yet - run targeted DE generation first if you want these triptychs."
     )
+
+
+# %%
+# COMPLEMENT CELL-TYPE DE LANDSCAPE
+# > A compact gene x SubclassLevel1 overview that complements the volcano
+# plots rather than duplicating them. Three comparison panels share one
+# diverging log2FC scale. A black star marks q<0.05, gray tiles indicate
+# genes not tested / unavailable in that cell type, and the colored squares
+# beside the gene names identify the same complement modules used throughout
+# the volcano figures. The complete long-format plotting table is written to
+# disk so every displayed tile can be audited/reused elsewhere.
+####
+def build_subclasslevel1_complement_landscape_table(tables):
+    groups = discover_subclasslevel1_triptych_maps(tables)
+    records = []
+
+    for pop_key, table_id_map in sorted(groups.items()):
+        for comparison_id in global_comparison_ids:
+            table_id = table_id_map.get(comparison_id)
+            if table_id is None:
+                continue
+
+            df = tables[table_id].copy()
+            df["gene_symbol"] = df["gene_symbol"].astype(str)
+            df = df[df["gene_symbol"].isin(complement_symbol_set)].copy()
+            if df.empty:
+                continue
+
+            # Gene-level DE tables are expected to contain one row per gene.
+            # Guard against accidental duplication so a tile can never be
+            # silently overwritten by a later row.
+            df = df.sort_values("gene_symbol").drop_duplicates("gene_symbol", keep="first")
+
+            for row in df.itertuples(index=False):
+                passes_filter = bool(getattr(row, "passes_expression_filter", False))
+                lfc = getattr(row, "primary_log2fc", np.nan)
+                q = getattr(row, "primary_q_value", np.nan)
+                lfc = float(lfc) if passes_filter and pd.notna(lfc) else np.nan
+                q = float(q) if passes_filter and pd.notna(q) else np.nan
+                records.append(
+                    {
+                        "subclasslevel1": pop_key,
+                        "subclasslevel1_label": compact_subclasslevel1_label(pop_key),
+                        "comparison_id": comparison_id,
+                        "comparison_label": comparison_title_map.get(comparison_id, comparison_id),
+                        "table_id": table_id,
+                        "gene_symbol": row.gene_symbol,
+                        "complement_pathway": complement_gene_to_primary_pathway.get(
+                            row.gene_symbol, "complement_other"
+                        ),
+                        "log2fc": lfc,
+                        "q_value": q,
+                        "significant_q0.05": bool(pd.notna(q) and q <= 0.05),
+                        "passes_expression_filter": passes_filter,
+                    }
+                )
+
+    landscape = pd.DataFrame(records)
+    if landscape.empty:
+        return landscape
+
+    landscape.to_csv(
+        complement_landscape_dir / "complement_celltype_de_landscape_long.csv",
+        index=False,
+    )
+    return landscape
+
+
+def _ordered_subclasslevel1_for_landscape(landscape):
+    observed = set(landscape["subclasslevel1"].astype(str))
+    ordered = [x for x in SUBCLASSLEVEL1_PLOT_ORDER if x in observed]
+    ordered += sorted(observed.difference(ordered))
+    return ordered
+
+
+def _ordered_complement_genes_for_landscape(landscape):
+    pathway_order = [
+        "classical", "lectin", "alternative", "terminal", "receptor", "regulator"
+    ]
+    present = set(landscape["gene_symbol"].astype(str))
+    genes = []
+    for pathway in pathway_order:
+        pathway_genes = sorted(
+            g
+            for g in present
+            if complement_gene_to_primary_pathway.get(g, "complement_other") == pathway
+        )
+        genes.extend(pathway_genes)
+    genes.extend(
+        sorted(
+            present.difference(genes),
+            key=lambda g: (
+                complement_gene_to_primary_pathway.get(g, "complement_other"), g
+            ),
+        )
+    )
+    return genes
+
+
+def plot_complement_celltype_de_landscape(
+    landscape,
+    comparison_ids=global_comparison_ids,
+    q_threshold=0.05,
+    output_stem="complement_celltype_de_landscape",
+):
+    if landscape is None or landscape.empty:
+        print("No SubclassLevel1 complement DE tables available for landscape plot.")
+        return None
+
+    populations = _ordered_subclasslevel1_for_landscape(landscape)
+    genes = _ordered_complement_genes_for_landscape(landscape)
+    comparisons = [c for c in comparison_ids if c in set(landscape["comparison_id"])]
+    if not populations or not genes or not comparisons:
+        print("Complement cell-type landscape has no plottable rows/columns.")
+        return None
+
+    # One common symmetric scale across all three panels. A robust percentile
+    # prevents one extreme coefficient from flattening the visible contrast.
+    finite_lfc = pd.to_numeric(landscape["log2fc"], errors="coerce").dropna().abs()
+    if finite_lfc.empty:
+        print("Complement cell-type landscape has no finite log2FC values.")
+        return None
+    color_limit = max(1.0, float(np.nanpercentile(finite_lfc, 97.5)))
+
+    n_genes = len(genes)
+    fig_height = min(8.6, max(5.0, 1.55 + 0.145 * n_genes))
+    fig, axes = plt.subplots(
+        1,
+        len(comparisons),
+        figsize=(7.5, fig_height),
+        sharey=True,
+    )
+    if len(comparisons) == 1:
+        axes = [axes]
+
+    gene_index = {g: i for i, g in enumerate(genes)}
+    pop_index = {p: i for i, p in enumerate(populations)}
+    cmap = plt.get_cmap("RdBu_r").copy()
+    cmap.set_bad("#f3f4f6")
+    last_im = None
+
+    for panel_i, (ax, comparison_id) in enumerate(zip(axes, comparisons)):
+        sub = landscape[landscape["comparison_id"] == comparison_id].copy()
+        matrix = np.full((len(genes), len(populations)), np.nan, dtype=float)
+        sig_y = []
+        sig_x = []
+
+        for row in sub.itertuples(index=False):
+            if row.gene_symbol not in gene_index or row.subclasslevel1 not in pop_index:
+                continue
+            yi = gene_index[row.gene_symbol]
+            xi = pop_index[row.subclasslevel1]
+            if pd.notna(row.log2fc):
+                matrix[yi, xi] = float(row.log2fc)
+            if pd.notna(row.q_value) and float(row.q_value) <= q_threshold:
+                sig_x.append(xi)
+                sig_y.append(yi)
+
+        masked = np.ma.masked_invalid(matrix)
+        last_im = ax.imshow(
+            masked,
+            aspect="auto",
+            interpolation="nearest",
+            cmap=cmap,
+            vmin=-color_limit,
+            vmax=color_limit,
+            rasterized=False,
+        )
+
+        if sig_x:
+            ax.scatter(
+                sig_x,
+                sig_y,
+                marker="*",
+                s=12,
+                c="black",
+                linewidths=0,
+                zorder=5,
+            )
+
+        ax.set_title(
+            comparison_title_map.get(comparison_id, comparison_id),
+            fontsize=FONT_SIZES["panel_title"],
+            fontweight="bold",
+            pad=7,
+            loc="center",
+        )
+        ax.set_xticks(range(len(populations)))
+        ax.set_xticklabels(
+            [compact_subclasslevel1_label(p) for p in populations],
+            rotation=90,
+            ha="center",
+            va="top",
+            fontsize=6,
+        )
+        ax.tick_params(axis="x", length=0, pad=2)
+        ax.tick_params(axis="y", length=0, pad=2)
+        ax.set_xlim(-0.5, len(populations) - 0.5)
+        ax.set_ylim(len(genes) - 0.5, -0.5)
+
+        # Fine white tile boundaries improve scanning without overwhelming the
+        # dense matrix at final print size.
+        ax.set_xticks(np.arange(-0.5, len(populations), 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, len(genes), 1), minor=True)
+        ax.grid(which="minor", color="white", linewidth=0.30, alpha=0.7)
+        ax.tick_params(which="minor", bottom=False, left=False)
+
+        if panel_i == 0:
+            ax.set_yticks(range(len(genes)))
+            ax.set_yticklabels(genes, fontsize=6)
+            for label in ax.get_yticklabels():
+                label.set_horizontalalignment("right")
+            ax.tick_params(axis="y", which="major", pad=5)
+            pathway_colors = [
+                complement_pathway_palette.get(
+                    complement_gene_to_primary_pathway.get(g, "complement_other"),
+                    "#111827",
+                )
+                for g in genes
+            ]
+            # Small pathway strip beside the gene names. x is in axes
+            # coordinates while y remains in row/data coordinates.
+            ax.scatter(
+                np.full(len(genes), -0.060),
+                np.arange(len(genes)),
+                transform=ax.get_yaxis_transform(),
+                marker="s",
+                s=12,
+                c=pathway_colors,
+                edgecolors="black",
+                linewidths=0.2,
+                clip_on=False,
+                zorder=6,
+            )
+        else:
+            ax.tick_params(labelleft=False)
+
+        # Panel letters sit outside the upper-left corner, matching volcanoes.
+        panel_letter = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[panel_i]
+        ax.text(
+            -0.055,
+            1.020,
+            panel_letter,
+            transform=ax.transAxes,
+            ha="right",
+            va="bottom",
+            fontsize=FONT_SIZES["panel_letter"],
+            fontweight="bold",
+            clip_on=False,
+        )
+
+    fig.subplots_adjust(
+        left=0.160,
+        right=0.985,
+        top=0.94,
+        bottom=0.20,
+        wspace=0.08,
+    )
+
+    # Shared effect-size scale.
+    cbar_ax = fig.add_axes([0.33, 0.105, 0.34, 0.018])
+    cbar = fig.colorbar(last_im, cax=cbar_ax, orientation="horizontal")
+    cbar.set_label(
+        r"DESeq2 log$_2$ fold change",
+        fontsize=FONT_SIZES["legend"],
+        labelpad=2,
+    )
+    cbar.ax.tick_params(labelsize=FONT_SIZES["legend"] - 1, length=2)
+
+    module_handles = []
+    for pathway in ["classical", "lectin", "alternative", "terminal", "receptor", "regulator"]:
+        module_handles.append(
+            Line2D(
+                [0], [0],
+                marker="s",
+                color="none",
+                markerfacecolor=complement_pathway_palette[pathway],
+                markeredgecolor="black",
+                markeredgewidth=0.3,
+                markersize=5,
+                label=pathway,
+            )
+        )
+    module_handles.append(
+        Line2D(
+            [0], [0],
+            marker="*",
+            color="none",
+            markerfacecolor="black",
+            markeredgecolor="black",
+            markersize=6,
+            label=f"q<{q_threshold:g}",
+        )
+    )
+    legend = fig.legend(
+        handles=module_handles,
+        loc="lower center",
+        ncol=len(module_handles),
+        frameon=True,
+        fancybox=False,
+        fontsize=7,
+        bbox_to_anchor=(0.5, 0.015),
+        borderpad=0.35,
+        handletextpad=0.45,
+        columnspacing=0.9,
+    )
+    legend.get_frame().set_facecolor("white")
+    legend.get_frame().set_edgecolor("#111827")
+    legend.get_frame().set_linewidth(0.7)
+    legend.get_frame().set_alpha(1.0)
+
+    fig.savefig(
+        complement_landscape_dir / f"{output_stem}.png",
+        dpi=EXPORT_DPI,
+        bbox_inches="tight",
+        facecolor="white",
+    )
+    fig.savefig(
+        complement_landscape_dir / f"{output_stem}.pdf",
+        dpi=EXPORT_DPI,
+        bbox_inches="tight",
+        facecolor="white",
+    )
+    plt.close(fig)
+    return fig
+
+
+complement_celltype_landscape_table = build_subclasslevel1_complement_landscape_table(
+    all_pseudobulk_de_tables
+)
+plot_complement_celltype_de_landscape(complement_celltype_landscape_table)
 
 
 # %%
@@ -1163,6 +1754,7 @@ def plot_inflammasome_aware_volcano(
     ax=None,
     show_legend=True,
     table_id=None,
+    panel_letter=None,
 ):
     plot_df = prepare_inflammasome_volcano_df(df)
     if inflammasome_only:
@@ -1189,6 +1781,7 @@ def plot_inflammasome_aware_volcano(
             alpha=0.35,
             linewidths=0,
             rasterized=True,
+            zorder=1,
         )
         bg_sig = bg[bg["is_de_primary_q_0_05"].fillna(False)]
         if not bg_sig.empty:
@@ -1200,6 +1793,7 @@ def plot_inflammasome_aware_volcano(
                 alpha=0.55,
                 linewidths=0,
                 rasterized=True,
+                zorder=2,
             )
 
     for program, color in inflammasome_palette.items():
@@ -1214,41 +1808,56 @@ def plot_inflammasome_aware_volcano(
                 MARKER_SIZES["inflammasome_pathway_overlay"]
                 if not inflammasome_only
                 else MARKER_SIZES["inflammasome_pathway_only"]
-            )
-            * PATHWAY_MARKER_SCALE,
+            ) * PATHWAY_MARKER_SCALE,
             c=color,
             marker=marker,
             edgecolors="black",
             linewidths=0.45,
             alpha=0.92,
             label=program,
+            zorder=4,
         )
 
-    ax.axhline(-np.log10(q_threshold), color="#111827", lw=0.8, ls="--", alpha=0.55)
-    ax.axvline(-lfc_threshold, color="#111827", lw=0.8, ls=":", alpha=0.45)
-    ax.axvline(lfc_threshold, color="#111827", lw=0.8, ls=":", alpha=0.45)
-    ax.axvline(0, color="#111827", lw=0.8, alpha=0.55)
+    ax.axhline(-np.log10(q_threshold), color="#111827", lw=0.8, ls="--", alpha=0.55, zorder=3)
+    ax.axvline(-lfc_threshold, color="#111827", lw=0.8, ls=":", alpha=0.45, zorder=3)
+    ax.axvline(lfc_threshold, color="#111827", lw=0.8, ls=":", alpha=0.45, zorder=3)
+    ax.axvline(0, color="#111827", lw=0.8, alpha=0.55, zorder=3)
 
-    left_label, right_label = get_direction_labels(plot_df, comparison_id)
-    y_top = plot_df["plot_y"].quantile(0.995)
-    x_min, x_max = np.nanpercentile(plot_df["primary_log2fc"], [0.5, 99.5])
+    counts = get_panel_counts(table_id, "inflammasome") if table_id else None
+    group1, group2 = get_contrast_labels(plot_df, comparison_id)
+    left_label = f"Higher in {group2}"
+    right_label = f"Higher in {group1}"
+
+    side_label_y = 0.82
+    left_side_label_x = 0.065
+    right_side_label_x = 0.935
     ax.text(
-        x_min,
-        y_top,
+        left_side_label_x,
+        side_label_y,
         left_label,
-        ha="left",
-        va="bottom",
+        transform=ax.transAxes,
+        rotation=90,
+        rotation_mode="anchor",
+        ha="right",
+        va="center",
         fontsize=FONT_SIZES["direction_text"],
         color="#374151",
+        clip_on=False,
+        zorder=6,
     )
     ax.text(
-        x_max,
-        y_top,
+        right_side_label_x,
+        side_label_y,
         right_label,
+        transform=ax.transAxes,
+        rotation=90,
+        rotation_mode="anchor",
         ha="right",
-        va="bottom",
+        va="center",
         fontsize=FONT_SIZES["direction_text"],
         color="#374151",
+        clip_on=False,
+        zorder=6,
     )
 
     infl_to_label = infl[
@@ -1270,38 +1879,46 @@ def plot_inflammasome_aware_volcano(
         )
 
     finalize_gene_labels(
-        ax, gene_labels, avoid_x=plot_df["primary_log2fc"], avoid_y=plot_df["plot_y"]
+        ax,
+        gene_labels,
+        avoid_x=plot_df["primary_log2fc"],
+        avoid_y=plot_df["plot_y"],
     )
 
     n_infl_sig = int((infl["primary_q_value"] <= q_threshold).sum())
     n_infl = int(len(infl))
     title = title or comparison_title_map.get(comparison_id, comparison_id)
-    suffix = (
-        "inflammasome genes only"
-        if inflammasome_only
-        else "all genes with inflammasome overlay"
+
+    add_compact_volcano_header(
+        ax,
+        title=title,
+        n_sig=n_infl_sig,
+        n_tested=n_infl,
+        counts=counts,
+        panel_letter=panel_letter,
+        q_threshold=q_threshold,
+        gene_set_label="inflammasome",
     )
-    annotation = get_panel_annotation(table_id, "inflammasome") if table_id else None
-    count_line = f"inflammasome q<{q_threshold}: {n_infl_sig}/{n_infl} tested"
-    title_text = f"{title}\n{suffix} | {count_line}"
-    if annotation:
-        title_text += f"\n{annotation}"
-    ax.set_title(title_text, fontsize=FONT_SIZES["panel_title"])
-    ax.set_xlabel(get_xaxis_label(plot_df, comparison_id))
-    ax.set_ylabel("-log10 BH-adjusted q-value, DESeq2")
-    ax.grid(True, alpha=0.14)
+
+    ax.set_xlabel(r"primary log$_2$ fold change")
+    ax.set_ylabel(r"$-\log_{10}$ primary BH q-value")
+    ax.grid(True, alpha=0.14, zorder=0)
     if show_legend:
         add_inflammasome_legend(ax, include_background=not inflammasome_only)
 
     if made_fig:
-        fig.tight_layout()
+        fig.tight_layout(rect=[0, 0, 1, 0.93])
         fig.savefig(
-            inflammasome_volcano_dir / f"{out_prefix}.png", dpi=EXPORT_DPI, bbox_inches="tight"
+            inflammasome_volcano_dir / f"{out_prefix}.png",
+            dpi=EXPORT_DPI,
+            bbox_inches="tight",
         )
         fig.savefig(
-            inflammasome_volcano_dir / f"{out_prefix}.pdf", dpi=EXPORT_DPI, bbox_inches="tight"
+            inflammasome_volcano_dir / f"{out_prefix}.pdf",
+            dpi=EXPORT_DPI,
+            bbox_inches="tight",
         )
-        plt.show()
+        plt.close(fig)
     return ax
 
 
@@ -1316,8 +1933,8 @@ def plot_inflammasome_volcano_triptych(
     table_id_map=None,
     figure_title=None,
     output_stem="global_inflammasome_aware_volcano_triptych",
-    label_top_inflammasome=10,
-    label_top_background=2,
+    label_top_inflammasome=8,
+    label_top_background=1,
     figsize_per_panel=FIGURE_SIZES["triptych_panel_width"],
     pathway_only=False,
 ):
@@ -1333,16 +1950,20 @@ def plot_inflammasome_volcano_triptych(
         print(f"No comparison tables available for {output_stem}.")
         return None
 
+    fig_height = TRIPTYCH_BASE_HEIGHT + (
+        TRIPTYCH_TITLE_EXTRA_HEIGHT if figure_title else 0.0
+    )
     fig, axes = plt.subplots(
         1,
         len(available),
-        figsize=(figsize_per_panel * len(available), FIGURE_SIZES["triptych_panel_height"]),
+        figsize=(figsize_per_panel * len(available), fig_height),
         sharey=False,
     )
     if len(available) == 1:
         axes = [axes]
 
-    for ax, comparison_id in zip(axes, available):
+    panel_letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for i, (ax, comparison_id) in enumerate(zip(axes, available)):
         table_id = table_id_map[comparison_id]
         plot_inflammasome_aware_volcano(
             tables[table_id],
@@ -1355,43 +1976,85 @@ def plot_inflammasome_volcano_triptych(
             ax=ax,
             show_legend=False,
             table_id=table_id,
+            panel_letter=panel_letters[i] if i < len(panel_letters) else str(i + 1),
         )
+        ax.set_xlabel("")
+        ax.set_ylabel("")
 
     if figure_title:
-        fig.suptitle(figure_title, y=1.03, fontsize=FONT_SIZES["figure_title"])
+        fig.suptitle(
+            figure_title,
+            x=0.5,
+            y=0.975,
+            ha="center",
+            fontsize=FONT_SIZES["figure_title"],
+            fontweight="normal",
+        )
 
-    fig.tight_layout(rect=[0, FIGURE_SIZES["triptych_legend_margin"], 1, 1])
+    bottom_frac = TRIPTYCH_BOTTOM_IN / fig_height
+    top_frac = TRIPTYCH_TOP_IN / fig_height
+    fig.subplots_adjust(
+        left=0.085,
+        right=0.990,
+        bottom=bottom_frac,
+        top=top_frac,
+        wspace=0.18,
+    )
+    fig.supxlabel(
+        r"primary log$_2$ fold change",
+        fontsize=FONT_SIZES["axis_label"],
+        y=(0.145 * TRIPTYCH_BASE_HEIGHT) / fig_height,
+    )
+    fig.supylabel(
+        r"$-\log_{10}$ primary BH q-value",
+        fontsize=FONT_SIZES["axis_label"],
+        x=0.012,
+    )
     legend_handles = build_inflammasome_legend_handles(include_background=not pathway_only)
-    fig.legend(
+    legend = fig.legend(
         handles=legend_handles,
         loc="lower center",
         ncol=len(legend_handles),
-        frameon=False,
+        frameon=True,
+        fancybox=False,
         fontsize=FONT_SIZES["legend"],
-        bbox_to_anchor=(0.5, 0.0),
+        bbox_to_anchor=(0.5, (0.068 * TRIPTYCH_BASE_HEIGHT) / fig_height),
+        borderpad=0.35,
+        handletextpad=0.6,
+        columnspacing=1.25,
     )
+    legend.get_frame().set_facecolor("white")
+    legend.get_frame().set_edgecolor("#111827")
+    legend.get_frame().set_linewidth(0.8)
+    legend.get_frame().set_alpha(1.0)
 
     fig.savefig(
-        inflammasome_volcano_dir / f"{output_stem}.png", dpi=EXPORT_DPI, bbox_inches="tight"
+        inflammasome_volcano_dir / f"{output_stem}.png",
+        dpi=EXPORT_DPI,
+        bbox_inches="tight",
+        facecolor="white",
     )
     fig.savefig(
-        inflammasome_volcano_dir / f"{output_stem}.pdf", dpi=EXPORT_DPI, bbox_inches="tight"
+        inflammasome_volcano_dir / f"{output_stem}.pdf",
+        dpi=EXPORT_DPI,
+        bbox_inches="tight",
+        facecolor="white",
     )
-    plt.show()
+    plt.close(fig)
     return fig
 
 
 plot_inflammasome_volcano_triptych(
     all_pseudobulk_de_tables,
     comparison_ids=global_comparison_ids,
-    figure_title="Global pseudobulk DE - inflammasome overlay",
+    figure_title=None,
     output_stem="global_inflammasome_aware_volcano_triptych",
 )
 
 plot_inflammasome_volcano_triptych(
     all_pseudobulk_de_tables,
     comparison_ids=global_comparison_ids,
-    figure_title="Global pseudobulk DE - inflammasome genes only",
+    figure_title=None,
     output_stem="global_inflammasome_only_volcano_triptych",
     label_top_inflammasome=30,
     label_top_background=0,
@@ -1435,7 +2098,7 @@ def plot_subclasslevel1_inflammasome_triptychs(
             output_stem=output_stem,
             label_top_inflammasome=9 if not pathway_only else 20,
             label_top_background=1 if not pathway_only else 0,
-            figsize_per_panel=FIGURE_SIZES["subclasslevel1_panel_width"],
+            figsize_per_panel=FIGURE_SIZES["triptych_panel_width"],
             pathway_only=pathway_only,
         )
         manifest.append(
