@@ -22,6 +22,7 @@ import scanpy as sc
 import scipy.sparse as sp
 from scipy.interpolate import make_interp_spline, PchipInterpolator
 from scipy.stats import t as student_t
+from PIL import Image
 
 # %% PATHS
 PROJECT_ROOT = Path.cwd().resolve().parent
@@ -36,7 +37,8 @@ MAIN_DIR = OUTPUT_DIR / "main"
 COMPONENT_DIR = OUTPUT_DIR / "components"
 SUPPLEMENT_DIR = OUTPUT_DIR / "supplement"
 SOURCE_DIR = OUTPUT_DIR / "source_data"
-for d in [OUTPUT_DIR, MAIN_DIR, COMPONENT_DIR, SUPPLEMENT_DIR, SOURCE_DIR]:
+PLOS_DIR = OUTPUT_DIR / "plos_submission"
+for d in [OUTPUT_DIR, MAIN_DIR, COMPONENT_DIR, SUPPLEMENT_DIR, SOURCE_DIR, PLOS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # Remove ONLY legacy 04d main-figure files so a manuscript run leaves Fig. 9 and Fig. 10
@@ -84,6 +86,18 @@ LATE_Q = 0.67
 MIN_GROUP_POINTS_PER_BIN = 2
 SMOOTH_CURVE_POINTS = 200
 RIBBON_ALPHA = 0.14
+
+# PLOS ONE main-figure production targets (final publication size).
+# Official figure text requirement: Arial/Times/Symbol, 8–12 pt.
+# Main manuscript canvases. PLOS dimensions are treated as downstream export
+# guidance rather than a hard layout constraint: readability takes precedence
+# for complex multi-panel figures, while SVG/PDF remain fully scalable.
+PLOS_MAIN_WIDTH_IN = 9.25
+PLOS_FIG9_HEIGHT_IN = 7.05
+PLOS_FIG10_HEIGHT_IN = 8.95
+PLOS_RASTER_DPI = 600
+PLOS_MIN_FONT_PT = 8.0
+PLOS_MAX_FONT_PT = 12.0
 MIN_DONOR_METACELLS_BIN = 2
 MIN_DONORS_RIBBON = 5
 # Ribbon = donor-level t interval of mean within-bin donor summaries;
@@ -203,11 +217,40 @@ def sanitize(x: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", str(x))
 
 
-def save_figure(fig, stem: Path, dpi: int = 300):
+def save_figure(fig, stem: Path, dpi: int = 300, plos_main: bool = False, plos_number: int | None = None):
+    """Save editable working formats; optionally add a PLOS-ready 600-dpi LZW TIFF.
+
+    For PLOS main figures the figure is already constructed at final publication
+    dimensions, so the TIFF is not subsequently rescaled. TIFF is flattened, RGB,
+    opaque, and LZW-compressed.
+    """
     stem.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(stem.with_suffix(".svg"))
     fig.savefig(stem.with_suffix(".pdf"))
     fig.savefig(stem.with_suffix(".png"), dpi=dpi, facecolor="white", transparent=False)
+    if plos_main:
+        PLOS_DIR.mkdir(parents=True, exist_ok=True)
+        out_name = f"Fig{int(plos_number)}.tif" if plos_number is not None else f"{stem.name}.tif"
+        plos_path = PLOS_DIR / out_name
+        # Preserve the requested final publication dimensions instead of using
+        # the global tight-bbox working-file setting. Then flatten to RGB so
+        # the submitted TIFF contains no alpha channel.
+        with mpl.rc_context({"savefig.bbox": None, "savefig.pad_inches": 0.0}):
+            fig.savefig(plos_path, format="tiff", dpi=PLOS_RASTER_DPI,
+                        facecolor="white", transparent=False)
+        with Image.open(plos_path) as im:
+            im.convert("RGB").save(plos_path, compression="tiff_lzw",
+                                   dpi=(PLOS_RASTER_DPI, PLOS_RASTER_DPI))
+        # PLOS ONE caps individual figure files at 10 MB. If a dense scatter
+        # TIFF exceeds that limit, 300 dpi is still within the journal's
+        # allowed 300–600 dpi range and avoids manual resampling later.
+        if plos_path.stat().st_size > 10 * 1024 * 1024:
+            with mpl.rc_context({"savefig.bbox": None, "savefig.pad_inches": 0.0}):
+                fig.savefig(plos_path, format="tiff", dpi=300,
+                            facecolor="white", transparent=False)
+            with Image.open(plos_path) as im:
+                im.convert("RGB").save(plos_path, compression="tiff_lzw", dpi=(300, 300))
+            print(f"NOTE: {plos_path.name} exceeded 10 MB at 600 dpi; rewrote at 300 dpi per PLOS limits.")
     plt.close(fig)
 
 
@@ -667,7 +710,7 @@ def draw_pseudotime_gene_panel(ax, curve_df: pd.DataFrame, title: str, subtitle:
                     xs[-1] + 0.012,
                     ys[-1],
                     grp,
-                    fontsize=6.8,
+                    fontsize=8.0,
                     color=st["color"],
                     va="center",
                     path_effects=[pe.withStroke(linewidth=2.2, foreground="white")],
@@ -683,16 +726,16 @@ def draw_pseudotime_gene_panel(ax, curve_df: pd.DataFrame, title: str, subtitle:
     ax.axvspan(LATE_Q, 1.0, color="#F5F5F5", alpha=0.9, zorder=0)
     ax.axvline(EARLY_Q, color="#C7C7C7", lw=0.8, ls="--", zorder=1)
     ax.axvline(LATE_Q, color="#C7C7C7", lw=0.8, ls="--", zorder=1)
-    ax.text(0.01, 0.98, "Early pseudotime", transform=ax.transAxes, ha="left", va="top", fontsize=6.7, color="#555555")
-    ax.text(0.99, 0.98, "Late pseudotime", transform=ax.transAxes, ha="right", va="top", fontsize=6.7, color="#555555")
+    ax.text(0.01, 0.98, "Early pseudotime", transform=ax.transAxes, ha="left", va="top", fontsize=8.0, color="#555555")
+    ax.text(0.99, 0.98, "Late pseudotime", transform=ax.transAxes, ha="right", va="top", fontsize=8.0, color="#555555")
     ax.set_xlabel("Scaled pseudotime (early → late)")
     ax.set_ylabel("Expression\nlog1p(CP10K)")
     ax.grid(axis="y", color="#E6E6E6", lw=0.7)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-    ax.set_title(title, loc="left", fontweight="bold")
+    ax.set_title("")
     if subtitle:
-        ax.text(0.0, 1.01, subtitle, transform=ax.transAxes, ha="left", va="bottom", fontsize=6.9, color="#444444")
+        ax.text(0.0, 1.01, subtitle, transform=ax.transAxes, ha="left", va="bottom", fontsize=8.0, color="#444444")
 def write_figure_summary(path: Path, lines: list[str]):
     with path.open("w") as f:
         f.write("04d trajectory / complement figure guide\n")
@@ -2056,6 +2099,39 @@ def fig9_row_label(comp: str, traj: str, lin: str) -> str:
     return f"{labels.get((comp, traj), traj)} {lin.replace('Lineage', 'L')}"
 
 
+def compact_traj_title(comp: str, traj: str, multiline: bool = False) -> str:
+    labels = {
+        ("PT", "PT"): "Proximal tubule",
+        ("FIB", "contractile"): "Contractile fibroblast",
+        ("FIB", "outer_medullary"): "Outer-medullary fibroblast",
+        ("Glomerular", "podocyte_PEC"): "Podocyte–PEC",
+        ("Glomerular", "endothelial_mesangial"): "Endothelial–mesangial",
+    }
+    text = labels.get((comp, traj), format_traj(comp, traj))
+    if multiline:
+        text = {
+            "Proximal tubule": "Proximal\ntubule",
+            "Contractile fibroblast": "Contractile\nfibroblast",
+            "Outer-medullary fibroblast": "Outer-medullary\nfibroblast",
+            "Podocyte–PEC": "Podocyte–PEC",
+            "Endothelial–mesangial": "Endothelial–\nmesangial",
+        }.get(text, text)
+    return text
+
+
+def add_header_row(fig, axes, labels, y: float, fontsize: float = 8.4, fontweight: str = "bold"):
+    """Place one clean header row above a strip of small aligned panels."""
+    for ax, label in zip(axes, labels):
+        bb = ax.get_position()
+        x = (bb.x0 + bb.x1) / 2
+        fig.text(
+            x, y, label,
+            ha="center", va="bottom",
+            fontsize=fontsize, fontweight=fontweight,
+            linespacing=0.92,
+        )
+
+
 def draw_fig9c_heatmap(ax, source: pd.DataFrame):
     row_keys = list(dict.fromkeys((r.compartment, r.trajectory, r.lineage) for r in source.itertuples(index=False)))
     columns = [
@@ -2087,8 +2163,8 @@ def draw_fig9c_heatmap(ax, source: pd.DataFrame):
     # q>=0.05/unavailable cells cannot be mistaken for true near-zero effects.
     cmap.set_bad("#BCC2C8")
     im = ax.imshow(matrix, aspect="auto", cmap=cmap, vmin=-limit, vmax=limit, interpolation="nearest")
-    ax.set_xticks(range(len(columns)), [c[2] for c in columns], fontsize=7.2)
-    ax.set_yticks(range(len(row_keys)), [fig9_row_label(*k) for k in row_keys], fontsize=7.0)
+    ax.set_xticks(range(len(columns)), [c[2] for c in columns], fontsize=8.0)
+    ax.set_yticks(range(len(row_keys)), [fig9_row_label(*k) for k in row_keys], fontsize=8.0)
     ax.tick_params(length=0)
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
@@ -2099,7 +2175,7 @@ def draw_fig9c_heatmap(ax, source: pd.DataFrame):
                     (j - 0.49, i - 0.49), 0.98, 0.98, fill=False,
                     edgecolor="#202020", linewidth=0.55, zorder=4,
                 ))
-                ax.text(j, i, f"{matrix[i,j]:+.2f}", ha="center", va="center", fontsize=6.0,
+                ax.text(j, i, f"{matrix[i,j]:+.2f}", ha="center", va="center", fontsize=8.0,
                         color="white" if abs(matrix[i,j]) > 0.55 * limit else "#222222",
                         path_effects=[pe.withStroke(linewidth=1.0, foreground="#FFFFFF55")])
     for s in ax.spines.values():
@@ -2171,9 +2247,8 @@ def draw_main_fingerprint_panel(ax, df: pd.DataFrame, key: tuple[str, str], limi
                 ax.scatter(j + 0.30, i - 0.22, marker="s", s=8, color="#111111", linewidths=0, zorder=6)
     ax.set_xlim(-0.6, len(PRIMARY_MODULES) - 0.4)
     ax.set_ylim(len(lineages) - 0.5, -0.5)
-    ax.set_xticks(range(len(PRIMARY_MODULES)), [m.capitalize() for m in PRIMARY_MODULES], rotation=42, ha="right", fontsize=7.4)
-    ax.set_yticks(range(len(lineages)), [l.replace("Lineage", "L") for l in lineages], fontsize=6.5)
-    ax.set_title(format_traj(*key), loc="left", fontsize=8.4, fontweight="bold")
+    ax.set_xticks(range(len(PRIMARY_MODULES)), [m.capitalize() for m in PRIMARY_MODULES], rotation=38, ha="right", fontsize=7.5)
+    ax.set_yticks(range(len(lineages)), [l.replace("Lineage", "L") for l in lineages], fontsize=7.4)
     ax.tick_params(length=0)
     for s in ax.spines.values():
         s.set_visible(False)
@@ -2214,67 +2289,77 @@ def curve_data_for_main(key: tuple[str, str], lineage: str, gene: str, module: s
 fig9c_source = build_fig9c_source(evidence.get("disease_assay_adjusted", pd.DataFrame()))
 fig9c_source.to_csv(SOURCE_DIR / "Fig9C_disease_association_source_data.csv", index=False)
 
-# Final manuscript layout: matched trajectory maps stacked on the left;
-# tall/narrow donor-level inferential heatmap on the far right.
-fig = plt.figure(figsize=(16.6, 9.5))
+# Final manuscript layout: Panel C remains at the far right; Panels A and B are
+# stacked on the left with one clean header row above Panel A only.
+fig = plt.figure(figsize=(PLOS_MAIN_WIDTH_IN, PLOS_FIG9_HEIGHT_IN))
 outer = fig.add_gridspec(
     2, 3,
-    width_ratios=[1.0, 0.39, 0.035],
+    width_ratios=[1.02, 0.42, 0.034],
     height_ratios=[1.0, 1.0],
-    wspace=0.10, hspace=0.23,
+    wspace=0.080, hspace=0.30,
 )
 
-# Panel A: architecture, enlarged and aligned with Panel B below.
-subA = outer[0, 0].subgridspec(1, len(TRAJECTORY_ORDER), wspace=0.045)
+# Panel A: frozen trajectory architecture.
+subA = outer[0, 0].subgridspec(1, len(TRAJECTORY_ORDER), wspace=0.055)
 axesA = [fig.add_subplot(subA[0, i]) for i in range(len(TRAJECTORY_ORDER))]
 for ax, key in zip(axesA, TRAJECTORY_ORDER):
     td = trajectory_data[key]
-    ax.scatter(td["plot_xy"][:, 0], td["plot_xy"][:, 1], s=DISPLAY_POINT_SIZE * 1.08,
-               color="#D5D5D5", alpha=0.44, linewidths=0, zorder=1)
+    ax.scatter(
+        td["plot_xy"][:, 0], td["plot_xy"][:, 1],
+        s=DISPLAY_POINT_SIZE * 1.00,
+        color="#D7D7D7", alpha=0.36, linewidths=0, zorder=1,
+    )
     draw_paths(ax, td, highlight=td["display_lineage"], label_endpoints=True)
     clean_axes(ax)
-    ax.set_title(format_traj(*key), fontsize=8.7, fontweight="bold", pad=4)
-axesA[0].text(-0.22, 1.08, "A", transform=axesA[0].transAxes, fontsize=14, fontweight="bold", va="top")
-fig.text(0.075, 0.947, "Cross-sectional architecture of the five frozen renal trajectories",
-         fontsize=11.0, fontweight="bold", va="top")
 
-# Panel B: same layout/order as A, no repeated trajectory titles.
-subB = outer[1, 0].subgridspec(1, len(TRAJECTORY_ORDER), wspace=0.045)
+fig.subplots_adjust(left=0.050, right=0.975, top=0.875, bottom=0.115)
+fig.canvas.draw()
+left_block = axesA[0].get_position().x0
+col_header_y = max(ax.get_position().y1 for ax in axesA) + 0.006
+panelA_title_y = col_header_y + 0.038
+add_header_row(fig, axesA, [compact_traj_title(*key, multiline=True) for key in TRAJECTORY_ORDER], y=col_header_y, fontsize=7.9)
+fig.text(left_block - 0.024, panelA_title_y, "A", fontsize=11.0, fontweight="bold", va="top")
+fig.text(left_block, panelA_title_y, "Cross-sectional architecture of the five frozen renal trajectories",
+         fontsize=9.7, fontweight="bold", va="top")
+
+# Panel B: same layout/order as A, with no duplicated trajectory headers.
+subB = outer[1, 0].subgridspec(1, len(TRAJECTORY_ORDER), wspace=0.055)
 axesB = [fig.add_subplot(subB[0, i]) for i in range(len(TRAJECTORY_ORDER))]
 for ax, key in zip(axesB, TRAJECTORY_ORDER):
     draw_disease_map(
         ax, trajectory_data[key], title=None,
-        point_size=DISPLAY_POINT_SIZE * 0.68, point_alpha=0.48,
+        point_size=DISPLAY_POINT_SIZE * 0.58,
+        point_alpha=0.44,
         label_endpoints=False,
     )
-axesB[0].text(-0.22, 1.08, "B", transform=axesB[0].transAxes, fontsize=14, fontweight="bold", va="top")
-fig.text(0.075, 0.505, "Disease-group distribution across the frozen renal trajectories",
-         fontsize=11.0, fontweight="bold", va="top")
+fig.canvas.draw()
+panelB_title_y = max(ax.get_position().y1 for ax in axesB) + 0.034
+fig.text(left_block - 0.024, panelB_title_y, "B", fontsize=11.0, fontweight="bold", va="top")
+fig.text(left_block, panelB_title_y, "Disease-group distribution across the frozen renal trajectories",
+         fontsize=9.7, fontweight="bold", va="top")
 
-# Panel C spans both rows at the far right. A dedicated colorbar axis keeps
-# the inferential summary visually self-contained and away from Panels A/B.
+# Panel C: far right heat map, vertically spanning A and B.
 axC = fig.add_subplot(outer[:, 1])
 caxC = fig.add_subplot(outer[:, 2])
 imC = draw_fig9c_heatmap(axC, fig9c_source)
-axC.set_title("Assay-adjusted donor-level disease associations", loc="left", fontsize=10.8, fontweight="bold", pad=30)
-axC.text(-0.11, 1.055, "C", transform=axC.transAxes, fontsize=14, fontweight="bold", va="top")
+axC.text(-0.12, 1.055, "C", transform=axC.transAxes, fontsize=11.0, fontweight="bold", va="top")
+axC.set_title("Donor-level disease associations", loc="left", fontsize=9.7, fontweight="bold", pad=18)
 axC.set_xticks(range(4), ["AKI", "CKD", "AKI", "CKD"], fontsize=7.6)
-# Endpoint headers are deliberately more prominent than disease sublabels.
-axC.text(0.25, 1.035, "Occupancy", transform=axC.transAxes, ha="center", va="bottom", fontsize=8.8, fontweight="bold")
-axC.text(0.75, 1.035, "Pseudotime position", transform=axC.transAxes, ha="center", va="bottom", fontsize=8.8, fontweight="bold")
+axC.text(0.25, 1.028, "Occupancy", transform=axC.transAxes, ha="center", va="bottom", fontsize=8.4, fontweight="bold")
+axC.text(0.75, 1.028, "Pseudotime position", transform=axC.transAxes, ha="center", va="bottom", fontsize=8.4, fontweight="bold")
 axC.axvline(1.5, color="#AEB4BA", lw=0.9, zorder=5)
 axC.set_aspect("equal", adjustable="box")
 if imC is not None:
     cb = fig.colorbar(imC, cax=caxC)
-    cb.set_label("Assay-adjusted coefficient")
+    cb.set_label("Assay-adjusted coefficient", fontsize=7.8)
+    cb.ax.tick_params(labelsize=7.2)
     sig_handles = [
         mpl.patches.Patch(facecolor="white", edgecolor="#202020", linewidth=0.65, label="q < 0.05"),
         mpl.patches.Patch(facecolor="#BCC2C8", edgecolor="none", label="q ≥ 0.05 / unavailable"),
     ]
     axC.legend(handles=sig_handles, loc="lower center", bbox_to_anchor=(0.5, -0.13),
-               frameon=False, ncol=2, fontsize=6.9, borderaxespad=0.0)
+               frameon=False, ncol=2, fontsize=7.1, borderaxespad=0.0)
 
-# Exactly one shared legend strip for trajectory symbols and disease groups.
 map_handles = [
     Line2D([0], [0], marker="*", color="#111111", lw=0, markersize=7, label="Inferred root / early end"),
     Line2D([0], [0], marker="o", color=TRAJECTORY_COLORS[("PT", "PT")], markerfacecolor="white", lw=0, markersize=5.5, label="Late end"),
@@ -2285,10 +2370,8 @@ disease_handles_main = [
     for g in ["CKD", "AKI", "Control/Other", "Unknown"]
 ]
 fig.legend(handles=map_handles + disease_handles_main, loc="lower center", bbox_to_anchor=(0.39, 0.012),
-           ncol=7, frameon=False, fontsize=7.0)
-fig.suptitle("Cross-sectional renal trajectories and disease-group associations", y=0.995, fontsize=13, fontweight="bold")
-fig.subplots_adjust(left=0.055, right=0.975, top=0.91, bottom=0.095)
-save_figure(fig, MAIN_DIR / "Fig9_trajectory_disease_context")
+           ncol=4, frameon=False, fontsize=7.1)
+save_figure(fig, MAIN_DIR / "Fig9_trajectory_disease_context", dpi=600, plos_main=True, plos_number=9)
 
 # ---- Fig. 10 source data and composite ----
 fig10a_source = build_fig10a_source(integrated)
@@ -2314,30 +2397,36 @@ for letter, key, lin, gene, module in main_curve_specs:
 fig10_curves_source = pd.concat(curve_parts, ignore_index=True) if curve_parts else pd.DataFrame()
 fig10_curves_source.to_csv(SOURCE_DIR / "Fig10B-F_pseudotime_showcase_source_data.csv", index=False)
 
-fig = plt.figure(figsize=(16.2, 12.6))
-outer = fig.add_gridspec(3, 1, height_ratios=[1.50, 1.18, 1.18], hspace=0.46)
-# More breathing room between compartment blocks and a dedicated, larger colorbar.
-subA = outer[0].subgridspec(
-    1, len(TRAJECTORY_ORDER) + 1,
-    width_ratios=[1, 1, 1, 1, 1, 0.085],
+fig = plt.figure(figsize=(PLOS_MAIN_WIDTH_IN, PLOS_FIG10_HEIGHT_IN))
+outer = fig.add_gridspec(3, 1, height_ratios=[1.50, 1.16, 1.16], hspace=0.58)
+
+subA = outer[0].subgridspec(1, len(TRAJECTORY_ORDER) + 1,
+    width_ratios=[1, 1, 1, 1, 1, 0.072],
     wspace=0.30,
 )
 axes_fp = [fig.add_subplot(subA[0, i]) for i in range(len(TRAJECTORY_ORDER))]
 cax_fp = fig.add_subplot(subA[0, -1])
 for ax, key in zip(axes_fp, TRAJECTORY_ORDER):
     draw_main_fingerprint_panel(ax, fig10a_source, key, fp_main_limit)
-fig.text(0.018, 0.968, "A", fontsize=14, fontweight="bold", va="top")
-fig.text(0.043, 0.968, "Complement transcriptional fingerprints across frozen renal lineages", fontsize=11.2, fontweight="bold", va="top")
-# Keep the main artwork uncluttered; this concise note spans the full Panel A width.
-fig.text(0.043, 0.943, "Primary complement set; CFHR1–5 excluded from inferential summary", fontsize=7.2, color="#555555", va="top")
+
+fig.subplots_adjust(left=0.070, right=0.965, top=0.875, bottom=0.112)
+fig.canvas.draw()
+fp_header_y = max(ax.get_position().y1 for ax in axes_fp) + 0.006
+panelA_title_y = fp_header_y + 0.038
+fig.text(0.020, panelA_title_y, "A", fontsize=11.0, fontweight="bold", va="top")
+fig.text(0.046, panelA_title_y, "Complement transcriptional fingerprints across frozen renal lineages",
+         fontsize=9.8, fontweight="bold", va="top")
+fig.text(0.046, panelA_title_y - 0.019,
+         "Primary complement set; CFHR1–5 excluded from inferential summary",
+         fontsize=6.9, color="#555555", va="top")
+add_header_row(fig, axes_fp, [compact_traj_title(*key, multiline=True) for key in TRAJECTORY_ORDER], y=fp_header_y, fontsize=7.8)
+
 sm = mpl.cm.ScalarMappable(norm=Normalize(-fp_main_limit, fp_main_limit), cmap="PuOr_r")
 cb = fig.colorbar(sm, cax=cax_fp)
-cb.set_label("Median late–early expression change")
+cb.set_label("Median late–early expression change", fontsize=7.6)
+cb.ax.tick_params(labelsize=7.2)
 
-# Five fixed showcase curves in an intentional 3-over-2 arrangement.
-# The lower pair is centered beneath the upper trio; no extra gene is added
-# merely to fill space.
-sub_curves = outer[1:].subgridspec(2, 6, wspace=0.34, hspace=0.46)
+sub_curves = outer[1:].subgridspec(2, 6, wspace=0.46, hspace=0.80)
 curve_axes = [
     fig.add_subplot(sub_curves[0, 0:2]),
     fig.add_subplot(sub_curves[0, 2:4]),
@@ -2349,10 +2438,11 @@ curve_axes = [
 for ax, (letter, key, lin, gene, module) in zip(curve_axes, main_curve_specs):
     cdf = curve_data_for_main(key, lin, gene, module)
     subtitle = f"{format_traj(*key)} · {lin.replace('Lineage','L')} · {module}"
-    draw_pseudotime_gene_panel(ax, cdf, gene, subtitle=subtitle)
-    # Lift the bold gene title away from the lineage/module subtitle.
-    ax.set_title(gene, loc="left", fontweight="bold", pad=15)
-    ax.tick_params(axis="both", labelsize=8.2)
+    draw_pseudotime_gene_panel(ax, cdf, gene, subtitle=None)
+    ax.tick_params(axis="both", labelsize=7.3)
+    ax.text(-0.10, 1.14, letter, transform=ax.transAxes, fontsize=10.4, fontweight="bold", va="top")
+    ax.text(0.00, 1.11, gene, transform=ax.transAxes, ha="left", va="bottom", fontsize=9.3, fontweight="bold")
+    ax.text(0.00, 0.995, subtitle, transform=ax.transAxes, ha="left", va="bottom", fontsize=7.6, color="#4A4A4A")
     rr = integrated[
         (integrated["compartment"] == key[0]) & (integrated["trajectory"] == key[1]) &
         (integrated["lineage"] == lin) & (integrated["gene"] == gene)
@@ -2363,14 +2453,13 @@ for ax, (letter, key, lin, gene, module) in zip(curve_axes, main_curve_specs):
         sq = format_q_clause("start/end", r["start_end_q"])
         delta = pd.to_numeric(pd.Series([r["late_minus_early"]]), errors="coerce").iloc[0]
         status = donor_support_label(r)
-        # Identical position and two-line grammar in every showcase panel.
+        footer = f"{aq}; {sq}\nΔ = {delta:+.2f}; {status}"
         ax.text(
-            0.985, 0.040, f"{aq}; {sq}\nΔ = {delta:+.2f}; {status}",
-            transform=ax.transAxes, ha="right", va="bottom", fontsize=7.9, color="#292929",
-            linespacing=1.25,
-            bbox=dict(boxstyle="round,pad=0.24", facecolor="white", edgecolor="none", alpha=0.82),
+            0.50, -0.20, footer,
+            transform=ax.transAxes, ha="center", va="top", fontsize=6.8,
+            color="#2D2D2D", linespacing=1.20, clip_on=False,
+            bbox=dict(boxstyle="round,pad=0.20", facecolor="#FBFBFB", edgecolor="#DDDDDD", linewidth=0.45, alpha=0.98),
         )
-    ax.text(-0.10, 1.08, letter, transform=ax.transAxes, fontsize=12, fontweight="bold", va="top")
 
 legend_main = [
     Line2D([0], [0], color="#111111", lw=2.3, ls="-", label="All donors / available metacells"),
@@ -2378,13 +2467,9 @@ legend_main = [
     Line2D([0], [0], color=DISEASE_COLORS["AKI"], lw=2.2, ls="--", label="AKI"),
     Line2D([0], [0], color=DISEASE_COLORS["Control/Other"], lw=1.2, ls="-.", label="Control / other"),
     mpl.patches.Patch(facecolor=DISEASE_COLORS["CKD"], alpha=RIBBON_ALPHA, edgecolor="none", label="95% interval across donor-level binned summaries"),
-    Line2D([0], [0], marker="o", color="none", markerfacecolor="none", markeredgecolor="#111111", markersize=5.5, label="Fingerprint: ≥1 donor-supported gene"),
-    Line2D([0], [0], marker="s", color="#111111", lw=0, markersize=4, label="Fingerprint: ≥50% jointly supported"),
 ]
-fig.legend(handles=legend_main, loc="lower center", bbox_to_anchor=(0.5, 0.012), ncol=4, frameon=False, fontsize=7.0)
-fig.suptitle("Complement remodelling across renal trajectories", y=0.998, fontsize=13, fontweight="bold")
-fig.subplots_adjust(left=0.075, right=0.955, top=0.905, bottom=0.085)
-save_figure(fig, MAIN_DIR / "Fig10_complement_trajectory_remodelling")
+fig.legend(handles=legend_main, loc="lower center", bbox_to_anchor=(0.5, 0.016), ncol=3, frameon=False, fontsize=7.0)
+save_figure(fig, MAIN_DIR / "Fig10_complement_trajectory_remodelling", dpi=600, plos_main=True, plos_number=10)
 
 # Caption-ready methodological notes saved outside the artwork.
 caption_notes = f"""Fig. 9 — Cross-sectional renal trajectories and disease-group associations
@@ -2422,6 +2507,8 @@ print("\nMain outputs:")
 for p in [
     MAIN_DIR / "Fig9_trajectory_disease_context.svg",
     MAIN_DIR / "Fig10_complement_trajectory_remodelling.svg",
+    PLOS_DIR / "Fig9.tif",
+    PLOS_DIR / "Fig10.tif",
 ]:
     print(" ", p)
 print("\nPrimary source data:")
@@ -2435,3 +2522,4 @@ print("\nNotes:")
 print(" - The displayed UMAP is a visualization layer only; frozen trajectories and tradeSeq results are unchanged.")
 print(" - Pseudotime curves are descriptive summaries anchored to the frozen metacell expression and lineage weights.")
 print(" - No trajectory, GAM, tradeSeq test, donor test, or DE model was refit or retuned.")
+print(f" - Main figures prioritize readable hierarchy at {PLOS_MAIN_WIDTH_IN:.2f} in working width; SVG/PDF remain scalable and TIFF exports are written to {PLOS_DIR}.")
