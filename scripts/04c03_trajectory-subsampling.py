@@ -2623,4 +2623,521 @@ for filename in [
         TRAJECTORY_DIR
         / filename,
     )
+# %%
+# =============================================================================
+# SUPPLEMENTARY FIGURE S7
+# Trajectory robustness across sensitivity analyses
+# =============================================================================
 
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+
+ROBUSTNESS_PLOT_DIR = PLOT_DIR / "supplementary"
+ROBUSTNESS_PLOT_DIR.mkdir(parents=True, exist_ok=True)
+
+# ---------------------------------------------------------------------
+# Input tables
+# ---------------------------------------------------------------------
+root_df = pd.read_csv(
+    TRAJECTORY_DIR / "trajectory_root_sensitivity_lineages.csv"
+)
+
+rep_df = pd.read_csv(
+    TRAJECTORY_DIR / "trajectory_representation_sensitivity_lineages.csv"
+)
+
+dpt_df = pd.read_csv(
+    TRAJECTORY_DIR / "trajectory_dpt_lineage_comparison.csv"
+)
+
+sub_df = pd.read_csv(
+    TRAJECTORY_DIR / "trajectory_donor_subsampling_lineage_stability.csv"
+)
+
+sub_summary = pd.read_csv(
+    TRAJECTORY_DIR / "trajectory_donor_subsampling_summary.csv"
+)
+
+fail_df = pd.read_csv(
+    TRAJECTORY_DIR / "trajectory_donor_subsampling_failures.csv"
+)
+
+# ---------------------------------------------------------------------
+# Display order
+# ---------------------------------------------------------------------
+trajectory_order = [
+    ("PT", "PT"),
+    ("FIB", "contractile"),
+    ("FIB", "outer_medullary"),
+    ("Glomerular", "podocyte_PEC"),
+    ("Glomerular", "endothelial_mesangial"),
+]
+
+trajectory_label = {
+    ("PT", "PT"): "PT",
+    ("FIB", "contractile"): "Contractile FIB",
+    ("FIB", "outer_medullary"): "Outer-medullary FIB",
+    ("Glomerular", "podocyte_PEC"): "Podocyte–PEC",
+    ("Glomerular", "endothelial_mesangial"): "Endothelial–mesangial",
+}
+
+def lineage_number(x):
+    x = str(x).replace("Lineage", "")
+    try:
+        return int(x)
+    except Exception:
+        return 999
+
+# construct global ordered lineage list
+lineage_keys = []
+
+for comp, traj in trajectory_order:
+    candidate = set()
+
+    for df, col in [
+        (root_df, "primary_lineage"),
+        (rep_df, "primary_lineage"),
+        (dpt_df, "lineage"),
+        (sub_df, "primary_lineage"),
+    ]:
+        ss = df.loc[
+            (df["compartment"] == comp)
+            & (df["trajectory"] == traj),
+            col,
+        ]
+        candidate.update(ss.dropna().astype(str))
+
+    for lin in sorted(candidate, key=lineage_number):
+        lineage_keys.append((comp, traj, lin))
+
+lineage_to_y = {
+    key: i for i, key in enumerate(lineage_keys[::-1])
+}
+
+def pretty_lineage(comp, traj, lin):
+    return f"{trajectory_label[(comp, traj)]} {str(lin).replace('Lineage', 'L')}"
+
+y_labels = [
+    pretty_lineage(*key)
+    for key in lineage_keys[::-1]
+]
+
+# separator positions between trajectories
+separator_y = []
+prev = None
+
+for i, key in enumerate(lineage_keys[::-1]):
+    group = key[:2]
+    if prev is not None and group != prev:
+        separator_y.append(i - 0.5)
+    prev = group
+
+
+# ---------------------------------------------------------------------
+# Figure
+# ---------------------------------------------------------------------
+fig = plt.figure(figsize=(15, 16))
+
+gs = fig.add_gridspec(
+    2,
+    2,
+    width_ratios=[1.10, 0.90],
+    height_ratios=[1.00, 1.05],
+    hspace=0.28,
+    wspace=0.28,
+)
+
+cmap = mpl.cm.get_cmap("coolwarm")
+norm = mpl.colors.Normalize(vmin=-1, vmax=1)
+
+# =====================================================================
+# A. Alternative-root sensitivity
+# =====================================================================
+ax = fig.add_subplot(gs[0, 0])
+
+root_specs = (
+    root_df[
+        [
+            "compartment",
+            "trajectory",
+            "sensitivity_root_subclass",
+            "sensitivity_original_root_cluster",
+        ]
+    ]
+    .drop_duplicates()
+    .reset_index(drop=True)
+)
+
+root_specs["root_label"] = (
+    root_specs["sensitivity_root_subclass"].astype(str)
+    + " / cluster "
+    + root_specs["sensitivity_original_root_cluster"].astype(str)
+)
+
+markers = ["o", "s", "^", "D", "P", "X", "v", "<", ">"]
+
+root_marker = {
+    label: markers[i % len(markers)]
+    for i, label in enumerate(root_specs["root_label"].unique())
+}
+
+for _, row in root_df.iterrows():
+
+    key = (
+        row["compartment"],
+        row["trajectory"],
+        row["primary_lineage"],
+    )
+
+    if key not in lineage_to_y:
+        continue
+
+    root_label = (
+        str(row["sensitivity_root_subclass"])
+        + " / cluster "
+        + str(row["sensitivity_original_root_cluster"])
+    )
+
+    # Path Jaccard encoded as point size
+    size = 25 + 95 * float(row["path_jaccard"])
+
+    ax.scatter(
+        row["spearman_rho"],
+        lineage_to_y[key],
+        s=size,
+        marker=root_marker[root_label],
+        c=[cmap(norm(row["spearman_rho"]))],
+        edgecolor="black",
+        linewidth=0.45,
+        alpha=0.9,
+    )
+
+ax.axvline(0, color="0.5", lw=0.7)
+ax.axvline(0.7, color="0.65", lw=0.8, ls="--")
+ax.axvline(0.9, color="0.65", lw=0.8, ls=":")
+
+ax.set_xlim(-1.05, 1.05)
+ax.set_yticks(range(len(y_labels)))
+ax.set_yticklabels(y_labels, fontsize=7)
+ax.set_xlabel("Spearman correlation with primary pseudotime")
+ax.set_title(
+    "A  Alternative-root sensitivity",
+    loc="left",
+    fontweight="bold",
+)
+
+for y in separator_y:
+    ax.axhline(y, color="0.85", lw=0.7)
+
+ax.grid(axis="x", alpha=0.15)
+
+# Do not create huge legend with every root in main plotting area.
+# Instead show size key only; root identity remains available in source data.
+size_handles = [
+    plt.scatter([], [], s=25 + 95*j, facecolor="white",
+                edgecolor="black", linewidth=0.5,
+                label=f"Jaccard {j:.2f}")
+    for j in [0.25, 0.50, 0.75, 1.00]
+]
+
+ax.legend(
+    handles=size_handles,
+    title="Path overlap",
+    fontsize=7,
+    title_fontsize=8,
+    loc="lower left",
+    frameon=False,
+)
+
+
+# =====================================================================
+# B. Representation sensitivity
+# =====================================================================
+ax = fig.add_subplot(gs[0, 1])
+
+representations = ["X_decipher_z", "X_scVI"]
+
+rep_display = {
+    "X_decipher_z": "DECIPHER z",
+    "X_scVI": "scVI",
+}
+
+matrix = np.full(
+    (len(lineage_keys[::-1]), len(representations)),
+    np.nan,
+)
+
+for _, row in rep_df.iterrows():
+
+    key = (
+        row["compartment"],
+        row["trajectory"],
+        row["primary_lineage"],
+    )
+
+    if key not in lineage_to_y:
+        continue
+
+    yi = lineage_to_y[key]
+
+    try:
+        xi = representations.index(row["representation"])
+    except ValueError:
+        continue
+
+    matrix[yi, xi] = row["spearman_rho"]
+
+im = ax.imshow(
+    matrix,
+    aspect="auto",
+    cmap=cmap,
+    norm=norm,
+    interpolation="none",
+)
+
+ax.set_xticks(range(len(representations)))
+ax.set_xticklabels(
+    [rep_display[x] for x in representations],
+    rotation=0,
+)
+ax.set_yticks(range(len(y_labels)))
+ax.set_yticklabels(y_labels, fontsize=7)
+
+for y in separator_y:
+    ax.axhline(y, color="white", lw=1.5)
+
+# annotate rho
+for yi in range(matrix.shape[0]):
+    for xi in range(matrix.shape[1]):
+        v = matrix[yi, xi]
+        if np.isfinite(v):
+            ax.text(
+                xi,
+                yi,
+                f"{v:.2f}",
+                ha="center",
+                va="center",
+                fontsize=6.5,
+                color="black" if abs(v) < 0.65 else "white",
+            )
+
+ax.set_title(
+    "B  Alternative latent representations",
+    loc="left",
+    fontweight="bold",
+)
+
+cbar = fig.colorbar(
+    im,
+    ax=ax,
+    fraction=0.055,
+    pad=0.04,
+)
+cbar.set_label("Spearman correlation")
+
+
+# =====================================================================
+# C. DPT sensitivity
+# =====================================================================
+ax = fig.add_subplot(gs[1, 0])
+
+for _, row in dpt_df.iterrows():
+
+    key = (
+        row["compartment"],
+        row["trajectory"],
+        row["lineage"],
+    )
+
+    if key not in lineage_to_y:
+        continue
+
+    rho = float(row["spearman_rho"])
+
+    ax.scatter(
+        rho,
+        lineage_to_y[key],
+        s=55,
+        c=[cmap(norm(rho))],
+        edgecolor="black",
+        linewidth=0.5,
+    )
+
+ax.axvline(0, color="0.5", lw=0.7)
+ax.axvline(0.7, color="0.65", lw=0.8, ls="--")
+ax.axvline(0.9, color="0.65", lw=0.8, ls=":")
+
+ax.set_xlim(-0.05, 1.05)
+ax.set_yticks(range(len(y_labels)))
+ax.set_yticklabels(y_labels, fontsize=7)
+ax.set_xlabel("Spearman correlation with primary Slingshot pseudotime")
+ax.set_title(
+    "C  Diffusion pseudotime sensitivity",
+    loc="left",
+    fontweight="bold",
+)
+
+for y in separator_y:
+    ax.axhline(y, color="0.85", lw=0.7)
+
+ax.grid(axis="x", alpha=0.15)
+
+
+# =====================================================================
+# D. Donor-subsampling stability
+# =====================================================================
+ax = fig.add_subplot(gs[1, 1])
+
+for _, row in sub_df.iterrows():
+
+    key = (
+        row["compartment"],
+        row["trajectory"],
+        row["primary_lineage"],
+    )
+
+    if key not in lineage_to_y:
+        continue
+
+    y = lineage_to_y[key]
+
+    med = float(row["spearman_median"])
+    q05 = float(row["spearman_q05"])
+    q95 = float(row["spearman_q95"])
+    match = float(row["match_fraction"])
+
+    # 5th–95th percentile interval
+    ax.hlines(
+        y,
+        q05,
+        q95,
+        color="0.55",
+        lw=1.3,
+        zorder=1,
+    )
+
+    # median point; size reflects lineage recovery fraction
+    size = 25 + 100 * match
+
+    ax.scatter(
+        med,
+        y,
+        s=size,
+        c=[cmap(norm(med))],
+        edgecolor="black",
+        linewidth=0.5,
+        zorder=2,
+    )
+
+ax.axvline(0, color="0.5", lw=0.7)
+ax.axvline(0.7, color="0.65", lw=0.8, ls="--")
+ax.axvline(0.9, color="0.65", lw=0.8, ls=":")
+
+ax.set_xlim(-1.05, 1.05)
+ax.set_yticks(range(len(y_labels)))
+ax.set_yticklabels(y_labels, fontsize=7)
+ax.set_xlabel("Spearman correlation")
+ax.set_title(
+    "D  Donor-subsampling stability",
+    loc="left",
+    fontweight="bold",
+)
+
+for y in separator_y:
+    ax.axhline(y, color="0.85", lw=0.7)
+
+ax.grid(axis="x", alpha=0.15)
+
+match_handles = [
+    plt.scatter(
+        [],
+        [],
+        s=25 + 100*m,
+        facecolor="white",
+        edgecolor="black",
+        linewidth=0.5,
+        label=f"{int(m*100)}%",
+    )
+    for m in [0.4, 0.7, 1.0]
+]
+
+ax.legend(
+    handles=match_handles,
+    title="Matched runs",
+    fontsize=7,
+    title_fontsize=8,
+    frameon=False,
+    loc="lower left",
+)
+
+
+# ---------------------------------------------------------------------
+# Overall title / footnote
+# ---------------------------------------------------------------------
+fig.suptitle(
+    "Trajectory robustness across alternative analytical choices",
+    fontsize=15,
+    fontweight="bold",
+    y=0.995,
+)
+
+n_failed = int(
+    fail_df["n_failures"].sum()
+    if not fail_df.empty
+    else 0
+)
+
+fig.text(
+    0.5,
+    0.012,
+    (
+        "Alternative-root and representation analyses compare matched lineages with the frozen "
+        "primary Slingshot trajectories. Donor-subsampling points show median rho with 5th–95th "
+        f"percentile intervals; point size indicates the fraction of successful runs in which "
+        f"the lineage was recovered. {n_failed} donor-subsampling runs failed before lineage comparison."
+    ),
+    ha="center",
+    va="bottom",
+    fontsize=8,
+)
+
+fig.subplots_adjust(
+    left=0.20,
+    right=0.96,
+    top=0.95,
+    bottom=0.06,
+)
+
+# ---------------------------------------------------------------------
+# Save
+# ---------------------------------------------------------------------
+out_png = (
+    ROBUSTNESS_PLOT_DIR
+    / "S7_trajectory_robustness.png"
+)
+
+out_pdf = (
+    ROBUSTNESS_PLOT_DIR
+    / "S7_trajectory_robustness.pdf"
+)
+
+fig.savefig(
+    out_png,
+    dpi=300,
+    bbox_inches="tight",
+)
+
+fig.savefig(
+    out_pdf,
+    bbox_inches="tight",
+)
+
+plt.close(fig)
+
+print(
+    "\nSaved S7 trajectory robustness figure:\n"
+    f"  {out_png}\n"
+    f"  {out_pdf}"
+)
