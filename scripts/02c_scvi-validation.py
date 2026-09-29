@@ -376,3 +376,218 @@ else:
     print(f"\nNo single gene's removal dropped Spearman rho below {LOGO_FLAG_THRESHOLD} in any module.")
 
 print(f"\nAll validation outputs saved to {VALIDATION_DIR}")
+
+# =============================================================================
+# SECTION D: PLOTTING -- validation figure for manuscript / supplement
+# =============================================================================
+import matplotlib.pyplot as plt
+
+# Keep module order consistent everywhere
+module_order = list(complement_gene_sets.keys())
+
+# Optional module colours, roughly aligned with the manuscript palette
+module_colours = {
+    "classical": "#3b82f6",    # blue
+    "lectin": "#0f766e",       # teal
+    "alternative": "#f97316",  # orange
+    "terminal": "#ef4444",     # red
+    "receptor": "#8b5cf6",     # purple
+    "regulator": "#22c55e",    # green
+}
+
+# -------------------------------------------------------------------------
+# Prepare summary tables for plotting
+# -------------------------------------------------------------------------
+method_plot_df = method_comparison.copy()
+method_plot_df["module"] = pd.Categorical(
+    method_plot_df["module"], categories=module_order, ordered=True
+)
+method_plot_df = method_plot_df.sort_values("module").reset_index(drop=True)
+
+logo_plot_df = logo_df.copy()
+logo_plot_df["module"] = pd.Categorical(
+    logo_plot_df["module"], categories=module_order, ordered=True
+)
+logo_plot_df = logo_plot_df.sort_values(["module", "spearman_rho_vs_full"]).reset_index(drop=True)
+
+logo_summary = (
+    logo_plot_df.groupby("module", observed=True)["spearman_rho_vs_full"]
+    .agg(
+        n_gene_drops="count",
+        min_rho="min",
+        median_rho="median",
+        max_rho="max",
+        q1=lambda s: np.nanquantile(s, 0.25),
+        q3=lambda s: np.nanquantile(s, 0.75),
+        n_below_090=lambda s: np.sum(s < 0.90),
+    )
+    .reset_index()
+)
+
+logo_summary.to_csv(VALIDATION_DIR / "leave_one_gene_out_summary.csv", index=False)
+
+# Also save one combined source-data table if useful for manuscript assembly
+source_rows = []
+for _, row in method_plot_df.iterrows():
+    source_rows.append({
+        "panel": "A",
+        "module": row["module"],
+        "value_type": "ULM_vs_AUCell_spearman_rho",
+        "value": row["spearman_rho"],
+        "gene_symbol": "",
+    })
+
+for _, row in logo_plot_df.iterrows():
+    source_rows.append({
+        "panel": "B",
+        "module": row["module"],
+        "value_type": "LOGO_spearman_rho_vs_full",
+        "value": row["spearman_rho_vs_full"],
+        "gene_symbol": row.get("gene_symbol", ""),
+    })
+
+validation_source_df = pd.DataFrame(source_rows)
+validation_source_df.to_csv(VALIDATION_DIR / "validation_figure_source_data.csv", index=False)
+
+# -------------------------------------------------------------------------
+# Plot figure
+# -------------------------------------------------------------------------
+fig = plt.figure(figsize=(12, 5.5))
+gs = fig.add_gridspec(1, 2, width_ratios=[1.0, 1.4], wspace=0.30)
+
+# -------------------------
+# Panel A: ULM vs AUCell
+# -------------------------
+ax1 = fig.add_subplot(gs[0, 0])
+
+x = np.arange(len(method_plot_df))
+y = method_plot_df["spearman_rho"].to_numpy()
+
+for i, (mod, rho) in enumerate(zip(method_plot_df["module"], y)):
+    ax1.scatter(
+        i, rho,
+        s=90,
+        color=module_colours.get(mod, "0.3"),
+        edgecolor="black",
+        linewidth=0.8,
+        zorder=3
+    )
+
+ax1.plot(x, y, color="0.55", linewidth=1.0, zorder=2)
+
+for i, rho in enumerate(y):
+    ax1.text(i, rho + 0.02, f"{rho:.3f}", ha="center", va="bottom", fontsize=9)
+
+ax1.set_xticks(x)
+ax1.set_xticklabels(method_plot_df["module"], rotation=30, ha="right")
+ax1.set_ylabel("Spearman correlation")
+ax1.set_title("A  ULM vs AUCell agreement", loc="left", fontweight="bold")
+ax1.set_ylim(0, 1.0)
+ax1.grid(True, axis="y", alpha=0.25)
+
+# -------------------------
+# Panel B: Leave-one-gene-out
+# -------------------------
+ax2 = fig.add_subplot(gs[0, 1])
+
+# Use numeric y positions so the first module appears at the top
+ypos = np.arange(len(module_order))[::-1]
+module_to_y = {m: y for m, y in zip(module_order, ypos)}
+
+# Draw min-max range and IQR band + median point
+for _, row in logo_summary.iterrows():
+    mod = row["module"]
+    y0 = module_to_y[mod]
+
+    # min-max whisker
+    ax2.hlines(
+        y=y0,
+        xmin=row["min_rho"],
+        xmax=row["max_rho"],
+        color="0.55",
+        linewidth=1.5,
+        zorder=1
+    )
+
+    # IQR band
+    ax2.hlines(
+        y=y0,
+        xmin=row["q1"],
+        xmax=row["q3"],
+        color=module_colours.get(mod, "0.3"),
+        linewidth=6,
+        zorder=2,
+        alpha=0.75
+    )
+
+    # median
+    ax2.scatter(
+        row["median_rho"], y0,
+        s=80,
+        color=module_colours.get(mod, "0.3"),
+        edgecolor="black",
+        linewidth=0.8,
+        zorder=4
+    )
+
+# Overlay individual gene-drop points with a tiny deterministic vertical jitter
+for mod in module_order:
+    sub = logo_plot_df.loc[logo_plot_df["module"] == mod].copy()
+    if sub.empty:
+        continue
+    y0 = module_to_y[mod]
+    offsets = np.linspace(-0.12, 0.12, len(sub)) if len(sub) > 1 else np.array([0.0])
+    ax2.scatter(
+        sub["spearman_rho_vs_full"].to_numpy(),
+        y0 + offsets,
+        s=34,
+        facecolor="white",
+        edgecolor=module_colours.get(mod, "0.3"),
+        linewidth=1.0,
+        zorder=3
+    )
+
+    # annotate only the most sensitive dropped gene per module
+    worst = sub.sort_values("spearman_rho_vs_full", ascending=True).iloc[0]
+    ax2.text(
+        worst["spearman_rho_vs_full"] - 0.005,
+        y0 + 0.20,
+        str(worst.get("gene_symbol", worst.get("gene_dropped", ""))),
+        ha="right",
+        va="bottom",
+        fontsize=8,
+        color="0.25"
+    )
+
+ax2.axvline(0.90, color="0.45", linestyle="--", linewidth=1.0)
+ax2.text(0.901, len(module_order) - 0.45, "rho = 0.90", fontsize=8, color="0.35", va="bottom")
+
+ax2.set_yticks(ypos)
+ax2.set_yticklabels(module_order)
+ax2.set_xlabel("Spearman correlation with full module score")
+ax2.set_title("B  Leave-one-gene-out robustness", loc="left", fontweight="bold")
+ax2.set_xlim(
+    max(0.70, float(np.nanmin(logo_plot_df["spearman_rho_vs_full"])) - 0.03),
+    1.01
+)
+ax2.set_ylim(-0.6, len(module_order) - 0.4)
+ax2.grid(True, axis="x", alpha=0.25)
+
+# Figure-level title
+fig.suptitle(
+    "Validation and robustness of complement transcriptional module scores",
+    fontsize=14,
+    fontweight="bold",
+    y=0.98
+)
+
+fig.tight_layout(rect=(0, 0, 1, 0.95))
+
+# Save outputs
+png_path = VALIDATION_DIR / "validation_scores_robustness.png"
+pdf_path = VALIDATION_DIR / "validation_scores_robustness.pdf"
+fig.savefig(png_path, dpi=300, bbox_inches="tight")
+fig.savefig(pdf_path, bbox_inches="tight")
+plt.close(fig)
+
+print(f"\nSaved validation figure to:\n  {png_path}\n  {pdf_path}")
