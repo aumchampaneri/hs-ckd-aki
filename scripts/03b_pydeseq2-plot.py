@@ -343,6 +343,11 @@ complement_gene_to_pathways, complement_gene_to_primary_pathway = (
     build_gene_set_program_table(complement_programs, complement_pathway_priority)
 )
 complement_symbol_set = set(complement_gene_to_pathways)
+# The prespecified primary complement universe excludes the descriptive CFHR1-5
+# genes. These are still useful to display in concordance plots, but they
+# should not control the headline concordance statistic.
+descriptive_cfhr_genes = {"CFHR1", "CFHR2", "CFHR3", "CFHR4", "CFHR5"}
+primary_complement_symbol_set = complement_symbol_set - descriptive_cfhr_genes
 
 inflammasome_gene_to_programs, inflammasome_gene_to_primary_program = (
     build_gene_set_program_table(inflammasome_programs, inflammasome_program_priority)
@@ -2153,6 +2158,8 @@ def load_concordance_table(output_dir, x_id, y_id):
 def annotate_concordance_pathways(df):
     df = df.copy()
     df["is_complement"] = df["gene_symbol"].isin(complement_symbol_set)
+    df["is_primary_complement"] = df["gene_symbol"].isin(primary_complement_symbol_set)
+    df["is_descriptive_cfhr"] = df["gene_symbol"].isin(descriptive_cfhr_genes)
     df["is_inflammasome"] = df["gene_symbol"].isin(inflammasome_symbol_set)
     df["primary_complement_pathway"] = df["gene_symbol"].map(
         complement_gene_to_primary_pathway
@@ -2163,21 +2170,258 @@ def annotate_concordance_pathways(df):
     return df
 
 
+def build_concordance_legend_handles(include_descriptive_cfhr=False):
+    handles = [
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="none",
+            markerfacecolor=background_color,
+            markeredgecolor="none",
+            markersize=5,
+            label="Other genes",
+            alpha=0.8,
+        )
+    ]
+    for pathway in complement_pathway_priority[::-1]:
+        color = complement_pathway_palette[pathway]
+        marker = "s" if pathway == "regulator" else "o"
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker=marker,
+                color="none",
+                markerfacecolor=color,
+                markeredgecolor="black",
+                markeredgewidth=0.6,
+                markersize=6.5,
+                label=pathway,
+            )
+        )
+    if include_descriptive_cfhr:
+        handles.append(
+            Line2D(
+                [0],
+                [0],
+                marker="s",
+                color="none",
+                markerfacecolor="white",
+                markeredgecolor="#6b7280",
+                markeredgewidth=1.0,
+                markersize=6.5,
+                label="CFHR1–5 (descriptive)",
+            )
+        )
+    return handles
+
+
+def plot_complement_concordance_scatter(
+    df,
+    x_id,
+    y_id,
+    q_threshold=0.05,
+    label_genes=("C3", "CD55", "MASP1", "CFB", "C1QC", "ITGAX", "C3AR1", "C6"),
+):
+    """Effect-size concordance plot for the prespecified complement universe.
+
+    The headline statistic is controlled by the primary complement set only.
+    CFHR1-5 are retained as descriptive context but are visibly separated from
+    the prespecified primary set.
+    """
+    df = annotate_concordance_pathways(df)
+    panel = df[df["is_complement"]].copy()
+    if panel.empty:
+        print(f"No complement genes with data for concordance plot {x_id} vs {y_id}.")
+        return None
+
+    primary = panel[panel["is_primary_complement"]].copy()
+    descriptive = panel[panel["is_descriptive_cfhr"]].copy()
+
+    fig, ax = plt.subplots(figsize=FIGURE_SIZES["concordance"])
+
+    # Genome-wide background context.
+    ax.scatter(
+        df["log2fc_x"],
+        df["log2fc_y"],
+        s=MARKER_SIZES["concordance_background"] * 0.70,
+        c=background_color,
+        alpha=0.22,
+        linewidths=0,
+        rasterized=True,
+        zorder=1,
+    )
+
+    # Primary complement genes by functional category.
+    for pathway in complement_pathway_priority[::-1]:
+        sub = primary[primary["primary_complement_pathway"] == pathway]
+        if sub.empty:
+            continue
+        marker = "s" if pathway == "regulator" else "o"
+        ax.scatter(
+            sub["log2fc_x"],
+            sub["log2fc_y"],
+            s=MARKER_SIZES["concordance_pathway"] * PATHWAY_MARKER_SCALE,
+            c=complement_pathway_palette[pathway],
+            marker=marker,
+            edgecolors="black",
+            linewidths=0.55,
+            alpha=0.95,
+            zorder=3,
+        )
+
+    # Descriptive-only CFHR genes: shown distinctly, excluded from headline stat.
+    if not descriptive.empty:
+        ax.scatter(
+            descriptive["log2fc_x"],
+            descriptive["log2fc_y"],
+            s=MARKER_SIZES["concordance_pathway"] * PATHWAY_MARKER_SCALE,
+            facecolors="white",
+            edgecolors="#6b7280",
+            marker="s",
+            linewidths=1.0,
+            alpha=0.95,
+            zorder=4,
+        )
+
+    valid = df[["log2fc_x", "log2fc_y"]].dropna()
+    axis_lim = np.nanmax(np.abs(valid.to_numpy())) * 1.10 if not valid.empty else 1.0
+    axis_lim = max(axis_lim, 1.0)
+    ax.set_xlim(-axis_lim, axis_lim)
+    ax.set_ylim(-axis_lim, axis_lim)
+    ax.axhline(0, color="#111827", lw=0.8, alpha=0.55, zorder=0)
+    ax.axvline(0, color="#111827", lw=0.8, alpha=0.55, zorder=0)
+    ax.plot(
+        [-axis_lim, axis_lim],
+        [-axis_lim, axis_lim],
+        color="#9ca3af",
+        lw=0.9,
+        ls="--",
+        alpha=0.75,
+        zorder=0,
+    )
+
+    # Deliberately small, biologically informative label set.  Use stable
+    # hand-tuned offsets for the crowded near-origin genes; these preserve the
+    # same label set across reruns and keep the cleanup burden minimal.
+    label_pool = panel[panel["gene_symbol"].isin(label_genes)].copy()
+    label_pool["label_rank"] = pd.Categorical(
+        label_pool["gene_symbol"], categories=list(label_genes), ordered=True
+    )
+    label_pool = label_pool.sort_values("label_rank")
+    label_offsets = {
+        "C3": (8, 8),
+        "CD55": (-30, 8),
+        "MASP1": (-34, -12),
+        "CFB": (10, 12),
+        "C1QC": (12, 18),
+        "ITGAX": (10, -14),
+        "C3AR1": (-34, -18),
+        "C6": (12, -20),
+    }
+    for _, row in label_pool.iterrows():
+        dx, dy = label_offsets.get(str(row["gene_symbol"]), (8, 8))
+        ax.annotate(
+            str(row["gene_symbol"]),
+            xy=(row["log2fc_x"], row["log2fc_y"]),
+            xytext=(dx, dy),
+            textcoords="offset points",
+            fontsize=FONT_SIZES["annotation"],
+            ha="left" if dx >= 0 else "right",
+            va="center",
+            color="#111827",
+            arrowprops={
+                "arrowstyle": "-",
+                "lw": 0.35,
+                "color": "#6b7280",
+                "alpha": 0.70,
+                "shrinkA": 1.5,
+                "shrinkB": 1.5,
+            },
+            zorder=5,
+        )
+
+    # Headline statistic uses only the prespecified primary complement universe.
+    primary_concordant = int(
+        primary["sign_concordant"].astype("boolean").fillna(False).sum()
+    )
+    primary_n = int(len(primary))
+    rho = valid["log2fc_x"].corr(valid["log2fc_y"], method="spearman") if not valid.empty else np.nan
+    pearson_r = valid["log2fc_x"].corr(valid["log2fc_y"], method="pearson") if not valid.empty else np.nan
+
+    ax.text(
+        0.02,
+        0.98,
+        f"{primary_concordant}/{primary_n} primary complement genes concordant in direction",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=FONT_SIZES["panel_title"] * 0.82,
+        fontweight=600,
+        bbox=dict(boxstyle="round,pad=0.22", facecolor="white", edgecolor="none", alpha=0.82),
+        zorder=6,
+    )
+    ax.text(
+        0.02,
+        0.915,
+        f"Spearman ρ = {rho:.3f}; Pearson r = {pearson_r:.3f}",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=FONT_SIZES["legend"] * 0.92,
+        bbox=dict(boxstyle="round,pad=0.18", facecolor="white", edgecolor="none", alpha=0.72),
+        zorder=6,
+    )
+
+    ax.set_title(
+        "Complement effect-size concordance in AKI and CKD",
+        fontsize=FONT_SIZES["figure_title"],
+        pad=10,
+    )
+    ax.set_xlabel("CKD vs normal log$_2$ fold change")
+    ax.set_ylabel("AKI vs normal log$_2$ fold change")
+    ax.grid(True, alpha=0.12, zorder=0)
+    ax.set_aspect("equal", adjustable="box")
+
+    legend_handles = build_concordance_legend_handles(include_descriptive_cfhr=not descriptive.empty)
+    ax.legend(
+        handles=legend_handles,
+        frameon=True,
+        fancybox=False,
+        fontsize=FONT_SIZES["legend"],
+        loc="lower right",
+        borderpad=0.35,
+        handletextpad=0.6,
+        columnspacing=0.9,
+        edgecolor="#111827",
+    )
+
+    fig.tight_layout()
+    out_stem = f"concordance_complement_{x_id}_vs_{y_id}"
+    fig.savefig(concordance_dir / f"{out_stem}.png", dpi=EXPORT_DPI, bbox_inches="tight", facecolor="white")
+    fig.savefig(concordance_dir / f"{out_stem}.pdf", dpi=EXPORT_DPI, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    return fig
+
+
 def plot_concordance_scatter(
     df, x_id, y_id, gene_set="complement", q_threshold=0.05, label_top_n=16
 ):
-    """gene_set: 'complement' or 'inflammasome' - which panel/palette to overlay."""
+    """Generic pathway concordance plot kept primarily for non-complement use."""
+    if gene_set == "complement":
+        return plot_complement_concordance_scatter(
+            df,
+            x_id,
+            y_id,
+            q_threshold=q_threshold,
+        )
+
     df = annotate_concordance_pathways(df)
-    is_col = "is_complement" if gene_set == "complement" else "is_inflammasome"
-    pathway_col = (
-        "primary_complement_pathway"
-        if gene_set == "complement"
-        else "primary_inflammasome_program"
-    )
-    palette = (
-        complement_pathway_palette if gene_set == "complement" else inflammasome_palette
-    )
-    other_key = "complement_other" if gene_set == "complement" else "inflammasome_other"
+    is_col = "is_inflammasome"
+    pathway_col = "primary_inflammasome_program"
+    palette = inflammasome_palette
+    other_key = "inflammasome_other"
 
     bg = df[~df[is_col]]
     panel = df[df[is_col]]
@@ -2203,9 +2447,7 @@ def plot_concordance_scatter(
         sub = panel[panel[pathway_col] == pathway]
         if sub.empty:
             continue
-        marker = (
-            "s" if pathway in {"regulator", "sensors", "nlrp3_mito_stress"} else "o"
-        )
+        marker = "s" if pathway in {"sensors", "nlrp3_mito_stress"} else "o"
         edge_widths = np.where(sub["significance_class"] == "both_sig", 0.9, 0.35)
         ax.scatter(
             sub["log2fc_x"],
@@ -2284,7 +2526,7 @@ def plot_concordance_scatter(
     out_stem = f"concordance_{gene_set}_{x_id}_vs_{y_id}"
     fig.savefig(concordance_dir / f"{out_stem}.png", dpi=EXPORT_DPI, bbox_inches="tight")
     fig.savefig(concordance_dir / f"{out_stem}.pdf", dpi=EXPORT_DPI, bbox_inches="tight")
-    plt.show()
+    plt.close(fig)
     return fig
 
 
