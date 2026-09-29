@@ -39,6 +39,20 @@ SOURCE_DIR = OUTPUT_DIR / "source_data"
 for d in [OUTPUT_DIR, MAIN_DIR, COMPONENT_DIR, SUPPLEMENT_DIR, SOURCE_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
+# Remove ONLY legacy 04d main-figure files so a manuscript run leaves Fig. 9 and Fig. 10
+# as the sole main figures. Never recursively delete unrelated trajectory outputs.
+LEGACY_04D_MAIN_STEMS = [
+    "trajectory_umap_atlas", "trajectory_disease_atlas", "complement_gene_maps",
+    "complement_gene_pseudotime_showcase", "complement_module_pseudotime",
+    "complement_integrated_evidence", "complement_disease_de_context",
+    "complement_program_river", "complement_pulse_map", "ckd_aki_divergence_map",
+    "complement_lineage_fingerprints", "complement_trajectory_constellation",
+    "complement_showcase_early_late_dumbbells",
+]
+for stem in LEGACY_04D_MAIN_STEMS:
+    for ext in [".svg", ".pdf", ".png"]:
+        (MAIN_DIR / f"{stem}{ext}").unlink(missing_ok=True)
+
 # 04d owns ONLY its explicitly named outputs. Never delete other scripts' results.
 # An existing old 04d file with the same name may be overwritten on save.
 INTEGRATED_PATH = COMPLEMENT_DIR / "complement_trajectory_integrated.csv"
@@ -150,7 +164,7 @@ FIGURE_TEXT = {
     "trajectory_umap_atlas": (
         "Trajectory UMAP atlas. Each panel shows one frozen renal trajectory projected onto a "
         "reader-facing UMAP-style layout for visualization only. Dots are metacells; thin gray curves "
-        "are other display trace through frozen pseudotime/weightss. One illustrative lineage is highlighted per panel (chosen by weighted "
+        "are other display traces through frozen pseudotime/weights. One illustrative lineage is highlighted per panel (chosen by weighted "
         "metacell coverage, not significance). Its clear arrow points from early toward late inferred pseudotime. "
         "The black star marks the inferred root/early end of the highlighted path, and the open circle marks "
         "its late end; neither represents a measured longitudinal time point."
@@ -170,9 +184,9 @@ FIGURE_TEXT = {
     ),
     "complement_gene_pseudotime_showcase": (
         "Showcase complement-gene pseudotime trends. Each panel plots smoothed descriptive expression across scaled "
-        "pseudotime for one gene-lineage pair. The black curve shows all supported metacells, blue shows CKD, red shows AKI, "
-        "and translucent ribbons show approximate 95% metacell-level intervals from weighted observations within pseudotime bins. "
-        "They are descriptive and do not account for donor clustering or establish a CKD-versus-AKI difference. "
+        "pseudotime for one gene-lineage pair. The black curve shows all supported metacells, blue shows CKD, orange shows AKI, "
+        "and translucent ribbons show 95% intervals across donor-level binned summaries when at least five donors contribute. "
+        "They are descriptive and do not establish a CKD-versus-AKI interaction. "
         "Faint points show the binned observed means that anchor the trend. These panels answer how complement expression changes "
         "from early to late pseudotime and whether CKD and AKI follow similar or distinct trajectories."
     ),
@@ -362,6 +376,41 @@ def weighted_mean(x: np.ndarray, w: np.ndarray) -> float:
     return float(np.average(x[ok], weights=w[ok]))
 
 
+def format_q_value(value, floor: float = 1e-300) -> str:
+    """Manuscript-safe q-value formatting; never render numerical underflow as q=0."""
+    q = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
+    if not np.isfinite(q):
+        return "NA"
+    if q <= 0 or q < floor:
+        return f"<{floor:.0e}"
+    if q < 0.001:
+        return f"{q:.1e}"
+    if q < 0.01:
+        return f"{q:.3f}"
+    return f"{q:.2f}"
+
+
+def format_q_clause(label: str, value) -> str:
+    """Return compact manuscript annotation such as 'association q < 1e-300'."""
+    value_text = format_q_value(value)
+    if value_text == "NA":
+        return f"{label} q = NA"
+    if value_text.startswith("<"):
+        return f"{label} q < {value_text[1:]}"
+    return f"{label} q = {value_text}"
+
+
+def donor_support_label(row) -> str:
+    """Describe the frozen paired-donor confirmation without implying a missing test is negative."""
+    q = pd.to_numeric(pd.Series([row.get("donor_wilcoxon_q")]), errors="coerce").iloc[0]
+    n = pd.to_numeric(pd.Series([row.get("n_donors_with_early_late")]), errors="coerce").iloc[0]
+    if np.isfinite(q):
+        return "donor-paired q < 0.05" if q < FDR_ALPHA else "donor-paired q ≥ 0.05"
+    if np.isfinite(n) and n > 0:
+        return "donor-paired test unavailable"
+    return "donor-paired test unavailable"
+
+
 def infer_plot_umap(ad: sc.AnnData, preferred_keys: list[str]) -> np.ndarray:
     # If a UMAP already exists, use it. Otherwise compute a display-only UMAP.
     for key in ["X_umap", "umap"]:
@@ -460,12 +509,17 @@ def draw_paths(ax, td, highlight: str | None = None, label_endpoints: bool = Fal
                     path_effects=[pe.withStroke(linewidth=2.0, foreground="white")])
 
 
-def draw_disease_map(ax, td, title: str | None = None):
+def draw_disease_map(ax, td, title: str | None = None, point_size: float = DISPLAY_POINT_SIZE,
+                     point_alpha: float = 0.72, label_endpoints: bool = True):
     vals = td["disease_group"]
     for cat in [c for c in ["Control/Other", "CKD", "AKI", "Unknown"] if c in set(vals.astype(str))]:
         sel = vals.to_numpy() == cat
-        ax.scatter(td["plot_xy"][sel, 0], td["plot_xy"][sel, 1], s=DISPLAY_POINT_SIZE, color=DISEASE_COLORS.get(cat, "#BBBBBB"), alpha=0.72, linewidths=0, zorder=2)
-    draw_paths(ax, td, highlight=td["display_lineage"], label_endpoints=True)
+        ax.scatter(
+            td["plot_xy"][sel, 0], td["plot_xy"][sel, 1],
+            s=point_size, color=DISEASE_COLORS.get(cat, "#BBBBBB"),
+            alpha=point_alpha, linewidths=0, zorder=2,
+        )
+    draw_paths(ax, td, highlight=td["display_lineage"], label_endpoints=label_endpoints)
     clean_axes(ax)
     if title:
         ax.set_title(title, loc="left", fontweight="bold")
@@ -560,8 +614,8 @@ def draw_pseudotime_gene_panel(ax, curve_df: pd.DataFrame, title: str, subtitle:
     curve_df = curve_df.copy()
     styles = {
         "All": {"color": "#111111", "lw": 2.3, "alpha": 1.0, "z": 6, "ribbon_alpha": 0.08},
-        "CKD": {"color": DISEASE_COLORS["CKD"], "lw": 2.0, "alpha": 0.98, "z": 5, "ribbon_alpha": RIBBON_ALPHA},
-        "AKI": {"color": DISEASE_COLORS["AKI"], "lw": 2.0, "alpha": 0.98, "z": 5, "ribbon_alpha": RIBBON_ALPHA},
+        "CKD": {"color": DISEASE_COLORS["CKD"], "lw": 2.2, "alpha": 0.98, "z": 5, "ribbon_alpha": RIBBON_ALPHA},
+        "AKI": {"color": DISEASE_COLORS["AKI"], "lw": 2.2, "alpha": 0.98, "z": 5, "ribbon_alpha": RIBBON_ALPHA},
         "Control/Other": {"color": DISEASE_COLORS["Control/Other"], "lw": 1.2, "alpha": 0.75, "z": 4, "ribbon_alpha": 0.08},
     }
     groups_to_draw = ["All", "CKD", "AKI", "Control/Other"]
@@ -885,6 +939,7 @@ for comp in sorted({x[0] for x in TRAJECTORY_ORDER}):
             raw = np.asarray(counts[:, symbol_to_idx[gene]].toarray()).ravel()
             gene_expr[gene] = np.log1p(raw / lib_safe * 1e4)
         td["gene_expr"] = gene_expr
+        td["donors"] = donors
 
         module_scores = {}
         for mod, genes in module_genes.items():
@@ -981,10 +1036,10 @@ legend_handles = [
     Line2D([0], [0], marker=">", color=TRAJECTORY_COLORS[("PT", "PT")], markerfacecolor=TRAJECTORY_COLORS[("PT", "PT")], lw=0, markersize=7, label="Arrow: early → late pseudotime"),
 ]
 fig.legend(handles=legend_handles, loc="lower center", bbox_to_anchor=(0.5, 0.11), ncol=3, frameon=False, title="How to read the map")
-fig.suptitle("Trajectory architecture projected onto UMAP-style state-space maps", y=1.02, fontsize=13, fontweight="bold")
+fig.suptitle("Cross-sectional architecture of the five frozen renal trajectories", y=1.02, fontsize=13, fontweight="bold")
 fig.tight_layout(rect=(0, 0.20, 1, 0.95))
 add_figure_note(fig, FIGURE_TEXT["trajectory_umap_atlas"], bottom=0.018)
-save_figure(fig, MAIN_DIR / "trajectory_umap_atlas")
+save_figure(fig, SUPPLEMENT_DIR / "S_trajectory_umap_atlas")
 
 # %% FIGURE 2 — DISEASE UMAP ATLAS
 fig, axes = plt.subplots(1, len(TRAJECTORY_ORDER), figsize=(16.8, 3.6), squeeze=False)
@@ -995,10 +1050,10 @@ disease_handles = [
     for grp in ["CKD", "AKI", "Control/Other", "Unknown"]
 ]
 fig.legend(handles=disease_handles, loc="lower center", bbox_to_anchor=(0.5, 0.11), ncol=4, frameon=False, title="Metacell disease label")
-fig.suptitle("CKD and AKI occupancy along the same frozen trajectories", y=1.02, fontsize=13, fontweight="bold")
+fig.suptitle("Disease-group distribution across the frozen renal trajectories", y=1.02, fontsize=13, fontweight="bold")
 fig.tight_layout(rect=(0, 0.20, 1, 0.95))
 add_figure_note(fig, FIGURE_TEXT["trajectory_disease_atlas"], bottom=0.018)
-save_figure(fig, MAIN_DIR / "trajectory_disease_atlas")
+save_figure(fig, SUPPLEMENT_DIR / "S_trajectory_disease_atlas")
 
 # %% FIGURE 3 — SHOWCASE COMPLEMENT GENE MAPS
 ncols = 4
@@ -1015,20 +1070,20 @@ for ax, (_, r) in zip(axes.ravel(), selected.iterrows()):
     vals = td["gene_expr"].get(gene, np.full(len(td["metacells"]), np.nan))
     title = f"{gene} · {format_traj(*key)}"
     draw_gene_map(ax, td, vals, lin, title, add_colorbar=True)
-    aq = pd.to_numeric(pd.Series([r["association_q"]]), errors="coerce").iloc[0]
-    sq = pd.to_numeric(pd.Series([r["start_end_q"]]), errors="coerce").iloc[0]
-    lfc = pd.to_numeric(pd.Series([r["start_end_logFC"]]), errors="coerce").iloc[0]
-    donor = "donor-supported" if bool(r["donor_sig"]) else "trajectory-only"
+    aq = format_q_value(r["association_q"])
+    sq = format_q_value(r["start_end_q"])
+    delta = pd.to_numeric(pd.Series([r["late_minus_early"]]), errors="coerce").iloc[0]
+    donor = donor_support_label(r)
     ax.text(
         0.02, 0.02,
-        f"{lin.replace('Lineage', 'L')}  ·  module: {r['module']}\nassociation q={aq:.2g}  ·  start/end q={sq:.2g}  ·  Δ={lfc:+.2f}\n{donor}",
+        f"{lin.replace('Lineage', 'L')} · {r['module']}\nassociation q={aq} · start/end q={sq} · Δ={delta:+.2f}\n{donor}",
         transform=ax.transAxes, ha="left", va="bottom", fontsize=6.3,
         bbox=dict(boxstyle="round,pad=0.25", facecolor="white", edgecolor="none", alpha=0.86),
     )
 fig.suptitle("Where key complement genes sit along the renal trajectories", y=1.01, fontsize=13, fontweight="bold")
 fig.tight_layout(rect=(0, 0.12, 1, 0.97))
 add_figure_note(fig, FIGURE_TEXT["complement_gene_maps"], bottom=0.013)
-save_figure(fig, MAIN_DIR / "complement_gene_maps")
+save_figure(fig, SUPPLEMENT_DIR / "S_complement_gene_maps")
 
 # %% FIGURE 4 — SHOWCASE GENE PSEUDOTIME TRENDS WITH CKD / AKI
 ncols = 2
@@ -1044,21 +1099,24 @@ for ax, (_, r) in zip(axes.ravel(), selected.iterrows()):
     sub = curve_source[(curve_source["compartment"] == key[0]) & (curve_source["trajectory"] == key[1]) & (curve_source["lineage"] == lin) & (curve_source["gene"] == gene)].copy()
     subtitle = f"{format_traj(*key)} · {lin.replace('Lineage', 'L')} · module: {r['module']}"
     draw_pseudotime_gene_panel(ax, sub, gene, subtitle=subtitle)
-    donor = "donor-supported" if bool(r["donor_sig"]) else "no donor confirmation"
-    ax.text(0.995, 0.03, f"Δ start→end = {float(r['start_end_logFC']):+.2f}\n{donor}", transform=ax.transAxes,
-            ha="right", va="bottom", fontsize=6.4, color="#333333")
+    donor = donor_support_label(r)
+    aq = format_q_value(r["association_q"])
+    sq = format_q_value(r["start_end_q"])
+    delta = pd.to_numeric(pd.Series([r["late_minus_early"]]), errors="coerce").iloc[0]
+    ax.text(0.995, 0.03, f"association q={aq} · start/end q={sq}\nΔ={delta:+.2f} · {donor}", transform=ax.transAxes,
+            ha="right", va="bottom", fontsize=6.3, color="#333333")
 legend_handles = [
     Line2D([0], [0], color="#111111", lw=2.3, ls="-", label="All donors / available metacells"),
     Line2D([0], [0], color=DISEASE_COLORS["CKD"], lw=2.0, ls="-", label="CKD: solid blue"),
     Line2D([0], [0], color=DISEASE_COLORS["AKI"], lw=2.0, ls="--", label="AKI: dashed vermilion"),
     Line2D([0], [0], color=DISEASE_COLORS["Control/Other"], lw=1.2, ls="-.", label="Control / other: dash-dot"),
-    mpl.patches.Patch(facecolor=DISEASE_COLORS["CKD"], alpha=RIBBON_ALPHA, edgecolor="none", label="Ribbon = 95% donor-level t interval (≥5 donors)"),
+    mpl.patches.Patch(facecolor=DISEASE_COLORS["CKD"], alpha=RIBBON_ALPHA, edgecolor="none", label="Ribbon = 95% interval across donor-level binned summaries (≥5 donors)"),
 ]
 fig.legend(handles=legend_handles, loc="lower center", bbox_to_anchor=(0.5, 0.11), ncol=3, frameon=False, title="How to read the curves")
 fig.suptitle("How complement expression changes across pseudotime", y=1.02, fontsize=13, fontweight="bold")
 fig.tight_layout(rect=(0, 0.16, 1, 0.97))
 add_figure_note(fig, FIGURE_TEXT["complement_gene_pseudotime_showcase"], bottom=0.015)
-save_figure(fig, MAIN_DIR / "complement_gene_pseudotime_showcase")
+save_figure(fig, SUPPLEMENT_DIR / "S_complement_pseudotime_showcase_full")
 
 # %% FIGURE 5 — MODULE-LEVEL PSEUDOTIME SUMMARY
 fig, axes = plt.subplots(len(TRAJECTORY_ORDER), 1, figsize=(9.0, 2.1 * len(TRAJECTORY_ORDER)), squeeze=False)
@@ -1089,7 +1147,7 @@ for ax, key in zip(axes.ravel(), TRAJECTORY_ORDER):
 fig.suptitle("Module-level complement programs across pseudotime", y=1.01, fontsize=13, fontweight="bold")
 fig.tight_layout(rect=(0, 0.10, 1, 0.98))
 add_figure_note(fig, FIGURE_TEXT["complement_module_pseudotime"], bottom=0.012)
-save_figure(fig, MAIN_DIR / "complement_module_pseudotime")
+save_figure(fig, SUPPLEMENT_DIR / "S_complement_module_pseudotime")
 
 # %% SUPPLEMENT / COMPONENTS
 # selected lineage pseudotime maps
@@ -1202,7 +1260,7 @@ cb=fig.colorbar(im,ax=ax,fraction=0.022,pad=0.012);cb.set_label("Observed late �
 fig.subplots_adjust(left=0.08,right=0.92,bottom=0.20,top=0.94)
 fig.text(0.09,0.02,"Gray = no joint FDR support or unavailable (not zero expression). Open circle = donor early/late FDR < 0.05. "
          "Each lineage is an independent scaled pseudotime axis; displayed values are descriptive, not tradeSeq logFC.",fontsize=8)
-save_figure(fig,MAIN_DIR/"complement_integrated_evidence")
+save_figure(fig,SUPPLEMENT_DIR/"S_complement_integrated_evidence")
 
 # Figure 7: cross-context links are separate observational tests, never a combined p-value.
 de=evidence["existing_disease_de"].copy()
@@ -1228,7 +1286,7 @@ if not de.empty and "gene" in de.columns:
         ax.spines[["top","right"]].set_visible(False)
         fig.text(0.02,0.01,"Star: original DE FDR < 0.05. Disease DE and pseudotime association are separate tests; no joint significance is inferred.",fontsize=7)
         fig.tight_layout(rect=(0,0.035,1,1))
-        save_figure(fig,MAIN_DIR/"complement_disease_de_context")
+        save_figure(fig,SUPPLEMENT_DIR/"S_complement_disease_de_context")
 
 # Figure 8: frozen disease association. Use actual pairwise endpoints, not UMAP colors.
 dp=evidence["disease_pairwise"].copy()
@@ -1564,7 +1622,7 @@ if not river_df.empty:
              'Colored curves are descriptive module means across pseudotime. Compare CKD and AKI within the same row to see whether the timing or magnitude of module activation differs.',
              ha='left', va='bottom', fontsize=7.1)
     fig.tight_layout(rect=(0, 0.08, 1, 0.975))
-    save_figure(fig, MAIN_DIR / 'complement_program_river')
+    save_figure(fig, SUPPLEMENT_DIR / 'S_complement_program_river')
 
 # Figure 10: pulse map.
 if not pulse_focus_df.empty:
@@ -1591,7 +1649,7 @@ if not pulse_focus_df.empty:
              'Early-hot rows peak near the beginning of pseudotime; late-hot rows peak near the end; mid-trajectory bands suggest transient activation.',
              ha='left', va='bottom', fontsize=7.1)
     fig.tight_layout(rect=(0, 0.04, 1, 0.97))
-    save_figure(fig, MAIN_DIR / 'complement_pulse_map')
+    save_figure(fig, SUPPLEMENT_DIR / 'S_complement_pulse_map')
 
 # Figure 11: CKD–AKI divergence map.
 if not divergence_df.empty:
@@ -1625,7 +1683,7 @@ if not divergence_df.empty:
              'Gray cells mean one or both disease groups lacked usable support in that bin. This is a descriptive visualization, not a formal interaction test.',
              ha='left', va='bottom', fontsize=7.1)
     fig.tight_layout(rect=(0, 0.04, 1, 0.97))
-    save_figure(fig, MAIN_DIR / 'ckd_aki_divergence_map')
+    save_figure(fig, SUPPLEMENT_DIR / 'S_ckd_aki_divergence_map')
 
 summary_lines.extend([
     'complement_program_river: Pathway-level summary of complement behavior along pseudotime. Each row is one representative lineage per trajectory; left and right columns separate CKD and AKI. Interpretation: compare module timing and amplitude within a row to see whether the overall complement program differs between disease contexts.',
@@ -1861,7 +1919,7 @@ fig.text(0.02, 0.006,
          'Each rounded tile summarizes one complement module within one lineage. Hue indicates the median observed late-minus-early expression change among genes with both association and start/end FDR < 0.05; tile opacity reflects the fraction of module genes with joint support. Gray means no jointly supported genes.',
          fontsize=7.1, ha='left', va='bottom')
 fig.tight_layout(rect=(0, 0.07, 1, 0.97))
-save_figure(fig, MAIN_DIR / 'complement_lineage_fingerprints')
+save_figure(fig, SUPPLEMENT_DIR / 'S_complement_lineage_fingerprints_full')
 
 # Figure 13: complement–trajectory constellation.
 constellation_edges = build_constellation_edges(integrated, max_edges=46)
@@ -1875,7 +1933,7 @@ fig.text(0.04, 0.055,
          'Outer nodes are complement genes; inner nodes are frozen lineages. Edges are shown only for selected strongest gene–lineage relationships with both association and start/end FDR < 0.05. Edge width scales with absolute observed late-minus-early change; donor-supported relationships are more opaque. This display is filtered for readability and is not a complete network.',
          fontsize=7.1, ha='left', va='bottom', wrap=True)
 fig.tight_layout(rect=(0, 0.09, 1, 0.96))
-save_figure(fig, MAIN_DIR / 'complement_trajectory_constellation')
+save_figure(fig, SUPPLEMENT_DIR / 'S_complement_trajectory_constellation')
 
 # Figure 14: early → late dumbbells for showcase findings.
 dumbbell_df = selected.merge(
@@ -1901,7 +1959,7 @@ fig.text(0.02, 0.008,
          'Open circles are early pseudotime means and filled circles are late pseudotime means. Connecting segments and arrowheads show direction of change. Color denotes complement module; an outer ring at the late endpoint indicates separate donor-level early/late FDR support.',
          fontsize=7.1, ha='left', va='bottom')
 fig.tight_layout(rect=(0, 0.08, 1, 0.95))
-save_figure(fig, MAIN_DIR / 'complement_showcase_early_late_dumbbells')
+save_figure(fig, SUPPLEMENT_DIR / 'S_complement_showcase_early_late_dumbbells')
 
 summary_lines.extend([
     'complement_lineage_fingerprints: Compact 26-lineage summary across complement modules. Hue encodes median observed late-minus-early change among genes with both trajectory association and start/end FDR support; opacity encodes the fraction of module genes jointly supported; open rings mark modules containing donor-supported genes.',
@@ -1909,6 +1967,442 @@ summary_lines.extend([
     'complement_showcase_early_late_dumbbells: Early-versus-late descriptive expression for the selected showcase gene-lineage pairs. Open endpoint = early, filled endpoint = late, module color = biological program, outer ring = separate donor confirmation.',
 ])
 write_figure_summary(OUTPUT_DIR / '04d_figure_summary_and_interpretation.txt', summary_lines)
+
+
+# %% MANUSCRIPT MAIN FIGURES — FIG. 9 AND FIG. 10
+PRIMARY_MODULES = ["classical", "lectin", "alternative", "terminal", "receptor", "regulator"]
+
+
+def _short_disease_label(value: str) -> str | None:
+    s = str(value).strip().lower()
+    if "acute" in s or s == "aki" or "aki" in s:
+        return "AKI"
+    if "chronic" in s or s == "ckd" or "ckd" in s:
+        return "CKD"
+    return None
+
+
+def build_fig9c_source(assay_df: pd.DataFrame) -> pd.DataFrame:
+    requested = [
+        ("PT", "PT", "Lineage5"),
+        ("PT", "PT", "Lineage6"),
+        ("PT", "PT", "Lineage7"),
+        ("PT", "PT", "Lineage8"),
+        ("PT", "PT", "Lineage10"),
+        ("FIB", "contractile", "Lineage1"),
+        ("FIB", "outer_medullary", "Lineage1"),
+        ("FIB", "outer_medullary", "Lineage2"),
+        ("Glomerular", "podocyte_PEC", "Lineage1"),
+        ("Glomerular", "podocyte_PEC", "Lineage2"),
+        ("Glomerular", "endothelial_mesangial", "Lineage2"),
+        ("Glomerular", "endothelial_mesangial", "Lineage3"),
+    ]
+    out_rows = []
+    if assay_df is None:
+        assay_df = pd.DataFrame()
+    df = assay_df.copy()
+    if not df.empty:
+        df["disease_group"] = df["disease"].map(_short_disease_label)
+        df["coefficient"] = pd.to_numeric(df.get("coefficient"), errors="coerce")
+        df["p_value"] = pd.to_numeric(df.get("pvalue"), errors="coerce")
+        df["q_value"] = pd.to_numeric(df.get("pvalue_bh"), errors="coerce")
+        df["standard_error"] = pd.to_numeric(df.get("standard_error_hc3"), errors="coerce")
+        if "n_model_donors" in df.columns:
+            df["n_donors"] = pd.to_numeric(df["n_model_donors"], errors="coerce")
+        else:
+            df["n_donors"] = np.nan
+    for comp, traj, lin in requested:
+        for endpoint in ["occupancy", "position"]:
+            for disease in ["AKI", "CKD"]:
+                hit = df[
+                    (df.get("compartment", pd.Series(dtype=str)).astype(str) == comp)
+                    & (df.get("trajectory", pd.Series(dtype=str)).astype(str) == traj)
+                    & (df.get("lineage", pd.Series(dtype=str)).astype(str) == lin)
+                    & (df.get("endpoint", pd.Series(dtype=str)).astype(str) == endpoint)
+                    & (df.get("disease_group", pd.Series(dtype=str)).astype(str) == disease)
+                ] if not df.empty else pd.DataFrame()
+                if hit.empty:
+                    out_rows.append({
+                        "compartment": comp, "trajectory": traj, "lineage": lin,
+                        "endpoint": endpoint, "disease_group": disease,
+                        "coefficient": np.nan, "standard_error": np.nan,
+                        "p_value": np.nan, "q_value": np.nan,
+                        "significant": False, "n_donors": np.nan,
+                    })
+                else:
+                    r = hit.sort_values("q_value", na_position="last").iloc[0]
+                    q = pd.to_numeric(pd.Series([r.get("q_value")]), errors="coerce").iloc[0]
+                    out_rows.append({
+                        "compartment": comp, "trajectory": traj, "lineage": lin,
+                        "endpoint": endpoint, "disease_group": disease,
+                        "coefficient": r.get("coefficient", np.nan),
+                        "standard_error": r.get("standard_error", np.nan),
+                        "p_value": r.get("p_value", np.nan),
+                        "q_value": q,
+                        "significant": bool(np.isfinite(q) and q < FDR_ALPHA),
+                        "n_donors": r.get("n_donors", np.nan),
+                    })
+    return pd.DataFrame(out_rows)
+
+
+def fig9_row_label(comp: str, traj: str, lin: str) -> str:
+    labels = {
+        ("PT", "PT"): "PT",
+        ("FIB", "contractile"): "Contractile FIB",
+        ("FIB", "outer_medullary"): "OM FIB",
+        ("Glomerular", "podocyte_PEC"): "Podocyte–PEC",
+        ("Glomerular", "endothelial_mesangial"): "Endothelial–mesangial",
+    }
+    return f"{labels.get((comp, traj), traj)} {lin.replace('Lineage', 'L')}"
+
+
+def draw_fig9c_heatmap(ax, source: pd.DataFrame):
+    row_keys = list(dict.fromkeys((r.compartment, r.trajectory, r.lineage) for r in source.itertuples(index=False)))
+    columns = [
+        ("occupancy", "AKI", "AKI occupancy"),
+        ("occupancy", "CKD", "CKD occupancy"),
+        ("position", "AKI", "AKI pseudotime\nposition"),
+        ("position", "CKD", "CKD pseudotime\nposition"),
+    ]
+    matrix = np.full((len(row_keys), len(columns)), np.nan)
+    sig = np.zeros_like(matrix, dtype=bool)
+    for i, key in enumerate(row_keys):
+        for j, (endpoint, disease, _) in enumerate(columns):
+            ss = source[
+                (source["compartment"] == key[0]) & (source["trajectory"] == key[1]) &
+                (source["lineage"] == key[2]) & (source["endpoint"] == endpoint) &
+                (source["disease_group"] == disease)
+            ]
+            if ss.empty:
+                continue
+            r = ss.iloc[0]
+            if bool(r["significant"]) and np.isfinite(r["coefficient"]):
+                matrix[i, j] = float(r["coefficient"])
+                sig[i, j] = True
+    finite = matrix[np.isfinite(matrix)]
+    limit = float(np.nanquantile(np.abs(finite), 0.95)) if len(finite) else 1.0
+    limit = max(limit, 0.05)
+    cmap = mpl.colormaps["RdBu_r"].copy()
+    # Deliberately darker than the near-zero center of the diverging map so
+    # q>=0.05/unavailable cells cannot be mistaken for true near-zero effects.
+    cmap.set_bad("#BCC2C8")
+    im = ax.imshow(matrix, aspect="auto", cmap=cmap, vmin=-limit, vmax=limit, interpolation="nearest")
+    ax.set_xticks(range(len(columns)), [c[2] for c in columns], fontsize=7.2)
+    ax.set_yticks(range(len(row_keys)), [fig9_row_label(*k) for k in row_keys], fontsize=7.0)
+    ax.tick_params(length=0)
+    for i in range(matrix.shape[0]):
+        for j in range(matrix.shape[1]):
+            if sig[i, j]:
+                # Thin outline is a second significance cue, especially for
+                # coefficients close to zero that appear nearly white.
+                ax.add_patch(mpl.patches.Rectangle(
+                    (j - 0.49, i - 0.49), 0.98, 0.98, fill=False,
+                    edgecolor="#202020", linewidth=0.55, zorder=4,
+                ))
+                ax.text(j, i, f"{matrix[i,j]:+.2f}", ha="center", va="center", fontsize=6.0,
+                        color="white" if abs(matrix[i,j]) > 0.55 * limit else "#222222",
+                        path_effects=[pe.withStroke(linewidth=1.0, foreground="#FFFFFF55")])
+    for s in ax.spines.values():
+        s.set_visible(False)
+    return im
+
+
+def build_fig10a_source(integrated_df: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    for (comp, traj, lin, mod), sub in integrated_df[integrated_df["module"].isin(PRIMARY_MODULES)].groupby(
+        ["compartment", "trajectory", "lineage", "module"], observed=True
+    ):
+        assoc = sub["association_sig"].fillna(False)
+        joint = assoc & sub["start_end_sig"].fillna(False)
+        donor = sub["donor_sig"].fillna(False)
+        vals = pd.to_numeric(sub.loc[joint, "late_minus_early"], errors="coerce").dropna()
+        n_total = int(len(sub))
+        n_joint = int(joint.sum())
+        rows.append({
+            "compartment": comp,
+            "trajectory": traj,
+            "lineage": lin,
+            "module": mod,
+            "n_primary_module_genes": n_total,
+            "n_association_supported": int(assoc.sum()),
+            "n_joint_association_startend_supported": n_joint,
+            "n_donor_supported": int(donor.sum()),
+            "fraction_joint_supported": float(n_joint / n_total) if n_total else np.nan,
+            "median_late_minus_early": float(vals.median()) if len(vals) else np.nan,
+            "has_donor_support": bool((donor & joint).any()),
+            "half_module_supported": bool(n_total > 0 and n_joint / n_total >= 0.50),
+        })
+    return pd.DataFrame(rows)
+
+
+def draw_main_fingerprint_panel(ax, df: pd.DataFrame, key: tuple[str, str], limit: float):
+    sub = df[(df["compartment"] == key[0]) & (df["trajectory"] == key[1])].copy()
+    if sub.empty:
+        ax.axis("off")
+        return
+    lineages = sorted(sub["lineage"].astype(str).unique(), key=lineage_number)
+    cmap = mpl.colormaps["PuOr_r"]
+    norm = Normalize(-limit, limit)
+    for i, lin in enumerate(lineages):
+        for j, mod in enumerate(PRIMARY_MODULES):
+            ss = sub[(sub["lineage"].astype(str) == lin) & (sub["module"] == mod)]
+            if ss.empty:
+                val = np.nan; frac = 0.0; has_donor = False; half = False
+            else:
+                r = ss.iloc[0]
+                val = pd.to_numeric(pd.Series([r["median_late_minus_early"]]), errors="coerce").iloc[0]
+                frac = float(pd.to_numeric(pd.Series([r["fraction_joint_supported"]]), errors="coerce").fillna(0).iloc[0])
+                has_donor = bool(r["has_donor_support"])
+                half = bool(r["half_module_supported"])
+            if not np.isfinite(val):
+                face = "#E7E7E7"; alpha = 1.0
+            else:
+                face = cmap(norm(np.clip(val, -limit, limit)))
+                alpha = 0.25 + 0.75 * np.clip(frac, 0, 1)
+            rect = mpl.patches.FancyBboxPatch(
+                (j - 0.43, i - 0.34), 0.86, 0.68,
+                boxstyle="round,pad=0.02,rounding_size=0.07",
+                linewidth=0.55, edgecolor="white", facecolor=face, alpha=alpha,
+            )
+            ax.add_patch(rect)
+            if has_donor:
+                ax.scatter(j, i, marker="o", s=20, facecolor="none", edgecolor="#111111", linewidths=0.7, zorder=5)
+            if half:
+                ax.scatter(j + 0.30, i - 0.22, marker="s", s=8, color="#111111", linewidths=0, zorder=6)
+    ax.set_xlim(-0.6, len(PRIMARY_MODULES) - 0.4)
+    ax.set_ylim(len(lineages) - 0.5, -0.5)
+    ax.set_xticks(range(len(PRIMARY_MODULES)), [m.capitalize() for m in PRIMARY_MODULES], rotation=42, ha="right", fontsize=7.4)
+    ax.set_yticks(range(len(lineages)), [l.replace("Lineage", "L") for l in lineages], fontsize=6.5)
+    ax.set_title(format_traj(*key), loc="left", fontsize=8.4, fontweight="bold")
+    ax.tick_params(length=0)
+    for s in ax.spines.values():
+        s.set_visible(False)
+
+
+def curve_data_for_main(key: tuple[str, str], lineage: str, gene: str, module: str) -> pd.DataFrame:
+    existing = curve_source[
+        (curve_source["compartment"] == key[0]) & (curve_source["trajectory"] == key[1]) &
+        (curve_source["lineage"] == lineage) & (curve_source["gene"] == gene)
+    ].copy()
+    if not existing.empty:
+        return existing
+    td = trajectory_data[key]
+    if gene not in td["gene_expr"]:
+        return pd.DataFrame()
+    j = td["lineage_to_j"][lineage]
+    expr = td["gene_expr"][gene]
+    ps = td["pt_scaled"][:, j]
+    wt = td["wt"][:, j]
+    donors = td["donors"]
+    dg = td["disease_group"].to_numpy(str)
+    masks = {
+        "All": np.ones(len(dg), dtype=bool),
+        "CKD": dg == "CKD",
+        "AKI": dg == "AKI",
+        "Control/Other": dg == "Control/Other",
+    }
+    parts = []
+    for group, mask in masks.items():
+        cdf, _ = make_group_curve(expr, ps, wt, mask, donors)
+        cdf["compartment"] = key[0]; cdf["trajectory"] = key[1]
+        cdf["lineage"] = lineage; cdf["gene"] = gene; cdf["group"] = group; cdf["module"] = module
+        parts.append(cdf)
+    return pd.concat(parts, ignore_index=True)
+
+
+# ---- Fig. 9 source data and composite ----
+fig9c_source = build_fig9c_source(evidence.get("disease_assay_adjusted", pd.DataFrame()))
+fig9c_source.to_csv(SOURCE_DIR / "Fig9C_disease_association_source_data.csv", index=False)
+
+# Final manuscript layout: matched trajectory maps stacked on the left;
+# tall/narrow donor-level inferential heatmap on the far right.
+fig = plt.figure(figsize=(16.6, 9.5))
+outer = fig.add_gridspec(
+    2, 3,
+    width_ratios=[1.0, 0.39, 0.035],
+    height_ratios=[1.0, 1.0],
+    wspace=0.10, hspace=0.23,
+)
+
+# Panel A: architecture, enlarged and aligned with Panel B below.
+subA = outer[0, 0].subgridspec(1, len(TRAJECTORY_ORDER), wspace=0.045)
+axesA = [fig.add_subplot(subA[0, i]) for i in range(len(TRAJECTORY_ORDER))]
+for ax, key in zip(axesA, TRAJECTORY_ORDER):
+    td = trajectory_data[key]
+    ax.scatter(td["plot_xy"][:, 0], td["plot_xy"][:, 1], s=DISPLAY_POINT_SIZE * 1.08,
+               color="#D5D5D5", alpha=0.44, linewidths=0, zorder=1)
+    draw_paths(ax, td, highlight=td["display_lineage"], label_endpoints=True)
+    clean_axes(ax)
+    ax.set_title(format_traj(*key), fontsize=8.7, fontweight="bold", pad=4)
+axesA[0].text(-0.22, 1.08, "A", transform=axesA[0].transAxes, fontsize=14, fontweight="bold", va="top")
+fig.text(0.075, 0.947, "Cross-sectional architecture of the five frozen renal trajectories",
+         fontsize=11.0, fontweight="bold", va="top")
+
+# Panel B: same layout/order as A, no repeated trajectory titles.
+subB = outer[1, 0].subgridspec(1, len(TRAJECTORY_ORDER), wspace=0.045)
+axesB = [fig.add_subplot(subB[0, i]) for i in range(len(TRAJECTORY_ORDER))]
+for ax, key in zip(axesB, TRAJECTORY_ORDER):
+    draw_disease_map(
+        ax, trajectory_data[key], title=None,
+        point_size=DISPLAY_POINT_SIZE * 0.68, point_alpha=0.48,
+        label_endpoints=False,
+    )
+axesB[0].text(-0.22, 1.08, "B", transform=axesB[0].transAxes, fontsize=14, fontweight="bold", va="top")
+fig.text(0.075, 0.505, "Disease-group distribution across the frozen renal trajectories",
+         fontsize=11.0, fontweight="bold", va="top")
+
+# Panel C spans both rows at the far right. A dedicated colorbar axis keeps
+# the inferential summary visually self-contained and away from Panels A/B.
+axC = fig.add_subplot(outer[:, 1])
+caxC = fig.add_subplot(outer[:, 2])
+imC = draw_fig9c_heatmap(axC, fig9c_source)
+axC.set_title("Assay-adjusted donor-level disease associations", loc="left", fontsize=10.8, fontweight="bold", pad=30)
+axC.text(-0.11, 1.055, "C", transform=axC.transAxes, fontsize=14, fontweight="bold", va="top")
+axC.set_xticks(range(4), ["AKI", "CKD", "AKI", "CKD"], fontsize=7.6)
+# Endpoint headers are deliberately more prominent than disease sublabels.
+axC.text(0.25, 1.035, "Occupancy", transform=axC.transAxes, ha="center", va="bottom", fontsize=8.8, fontweight="bold")
+axC.text(0.75, 1.035, "Pseudotime position", transform=axC.transAxes, ha="center", va="bottom", fontsize=8.8, fontweight="bold")
+axC.axvline(1.5, color="#AEB4BA", lw=0.9, zorder=5)
+axC.set_aspect("equal", adjustable="box")
+if imC is not None:
+    cb = fig.colorbar(imC, cax=caxC)
+    cb.set_label("Assay-adjusted coefficient")
+    sig_handles = [
+        mpl.patches.Patch(facecolor="white", edgecolor="#202020", linewidth=0.65, label="q < 0.05"),
+        mpl.patches.Patch(facecolor="#BCC2C8", edgecolor="none", label="q ≥ 0.05 / unavailable"),
+    ]
+    axC.legend(handles=sig_handles, loc="lower center", bbox_to_anchor=(0.5, -0.13),
+               frameon=False, ncol=2, fontsize=6.9, borderaxespad=0.0)
+
+# Exactly one shared legend strip for trajectory symbols and disease groups.
+map_handles = [
+    Line2D([0], [0], marker="*", color="#111111", lw=0, markersize=7, label="Inferred root / early end"),
+    Line2D([0], [0], marker="o", color=TRAJECTORY_COLORS[("PT", "PT")], markerfacecolor="white", lw=0, markersize=5.5, label="Late end"),
+    Line2D([0], [0], marker=">", color=TRAJECTORY_COLORS[("PT", "PT")], lw=0, markersize=6, label="Early → late pseudotime"),
+]
+disease_handles_main = [
+    Line2D([0], [0], marker="o", color="none", markerfacecolor=DISEASE_COLORS[g], markeredgecolor="none", markersize=5.5, label=g)
+    for g in ["CKD", "AKI", "Control/Other", "Unknown"]
+]
+fig.legend(handles=map_handles + disease_handles_main, loc="lower center", bbox_to_anchor=(0.39, 0.012),
+           ncol=7, frameon=False, fontsize=7.0)
+fig.suptitle("Cross-sectional renal trajectories and disease-group associations", y=0.995, fontsize=13, fontweight="bold")
+fig.subplots_adjust(left=0.055, right=0.975, top=0.91, bottom=0.095)
+save_figure(fig, MAIN_DIR / "Fig9_trajectory_disease_context")
+
+# ---- Fig. 10 source data and composite ----
+fig10a_source = build_fig10a_source(integrated)
+fig10a_source.to_csv(SOURCE_DIR / "Fig10A_complement_fingerprint_source_data.csv", index=False)
+finite_fp_main = pd.to_numeric(fig10a_source["median_late_minus_early"], errors="coerce")
+finite_fp_main = finite_fp_main[np.isfinite(finite_fp_main)]
+fp_main_limit = float(np.nanquantile(np.abs(finite_fp_main), 0.95)) if len(finite_fp_main) else 1.0
+fp_main_limit = max(fp_main_limit, 0.05)
+
+main_curve_specs = [
+    ("B", ("PT", "PT"), "Lineage3", "C3", "alternative"),
+    ("C", ("PT", "PT"), "Lineage2", "C1S", "classical"),
+    ("D", ("Glomerular", "podocyte_PEC"), "Lineage1", "CR1", "receptor"),
+    ("E", ("Glomerular", "endothelial_mesangial"), "Lineage3", "CFH", "regulator"),
+    ("F", ("FIB", "outer_medullary"), "Lineage1", "C1R", "classical"),
+]
+curve_parts = []
+for letter, key, lin, gene, module in main_curve_specs:
+    cdf = curve_data_for_main(key, lin, gene, module)
+    if not cdf.empty:
+        cdf = cdf.copy(); cdf["panel"] = letter
+        curve_parts.append(cdf)
+fig10_curves_source = pd.concat(curve_parts, ignore_index=True) if curve_parts else pd.DataFrame()
+fig10_curves_source.to_csv(SOURCE_DIR / "Fig10B-F_pseudotime_showcase_source_data.csv", index=False)
+
+fig = plt.figure(figsize=(16.2, 12.6))
+outer = fig.add_gridspec(3, 1, height_ratios=[1.50, 1.18, 1.18], hspace=0.46)
+# More breathing room between compartment blocks and a dedicated, larger colorbar.
+subA = outer[0].subgridspec(
+    1, len(TRAJECTORY_ORDER) + 1,
+    width_ratios=[1, 1, 1, 1, 1, 0.085],
+    wspace=0.30,
+)
+axes_fp = [fig.add_subplot(subA[0, i]) for i in range(len(TRAJECTORY_ORDER))]
+cax_fp = fig.add_subplot(subA[0, -1])
+for ax, key in zip(axes_fp, TRAJECTORY_ORDER):
+    draw_main_fingerprint_panel(ax, fig10a_source, key, fp_main_limit)
+fig.text(0.018, 0.968, "A", fontsize=14, fontweight="bold", va="top")
+fig.text(0.043, 0.968, "Complement transcriptional fingerprints across frozen renal lineages", fontsize=11.2, fontweight="bold", va="top")
+# Keep the main artwork uncluttered; this concise note spans the full Panel A width.
+fig.text(0.043, 0.943, "Primary complement set; CFHR1–5 excluded from inferential summary", fontsize=7.2, color="#555555", va="top")
+sm = mpl.cm.ScalarMappable(norm=Normalize(-fp_main_limit, fp_main_limit), cmap="PuOr_r")
+cb = fig.colorbar(sm, cax=cax_fp)
+cb.set_label("Median late–early expression change")
+
+# Five fixed showcase curves in an intentional 3-over-2 arrangement.
+# The lower pair is centered beneath the upper trio; no extra gene is added
+# merely to fill space.
+sub_curves = outer[1:].subgridspec(2, 6, wspace=0.34, hspace=0.46)
+curve_axes = [
+    fig.add_subplot(sub_curves[0, 0:2]),
+    fig.add_subplot(sub_curves[0, 2:4]),
+    fig.add_subplot(sub_curves[0, 4:6]),
+    fig.add_subplot(sub_curves[1, 1:3]),
+    fig.add_subplot(sub_curves[1, 3:5]),
+]
+
+for ax, (letter, key, lin, gene, module) in zip(curve_axes, main_curve_specs):
+    cdf = curve_data_for_main(key, lin, gene, module)
+    subtitle = f"{format_traj(*key)} · {lin.replace('Lineage','L')} · {module}"
+    draw_pseudotime_gene_panel(ax, cdf, gene, subtitle=subtitle)
+    # Lift the bold gene title away from the lineage/module subtitle.
+    ax.set_title(gene, loc="left", fontweight="bold", pad=15)
+    ax.tick_params(axis="both", labelsize=8.2)
+    rr = integrated[
+        (integrated["compartment"] == key[0]) & (integrated["trajectory"] == key[1]) &
+        (integrated["lineage"] == lin) & (integrated["gene"] == gene)
+    ]
+    if not rr.empty:
+        r = rr.iloc[0]
+        aq = format_q_clause("association", r["association_q"])
+        sq = format_q_clause("start/end", r["start_end_q"])
+        delta = pd.to_numeric(pd.Series([r["late_minus_early"]]), errors="coerce").iloc[0]
+        status = donor_support_label(r)
+        # Identical position and two-line grammar in every showcase panel.
+        ax.text(
+            0.985, 0.040, f"{aq}; {sq}\nΔ = {delta:+.2f}; {status}",
+            transform=ax.transAxes, ha="right", va="bottom", fontsize=7.9, color="#292929",
+            linespacing=1.25,
+            bbox=dict(boxstyle="round,pad=0.24", facecolor="white", edgecolor="none", alpha=0.82),
+        )
+    ax.text(-0.10, 1.08, letter, transform=ax.transAxes, fontsize=12, fontweight="bold", va="top")
+
+legend_main = [
+    Line2D([0], [0], color="#111111", lw=2.3, ls="-", label="All donors / available metacells"),
+    Line2D([0], [0], color=DISEASE_COLORS["CKD"], lw=2.2, ls="-", label="CKD"),
+    Line2D([0], [0], color=DISEASE_COLORS["AKI"], lw=2.2, ls="--", label="AKI"),
+    Line2D([0], [0], color=DISEASE_COLORS["Control/Other"], lw=1.2, ls="-.", label="Control / other"),
+    mpl.patches.Patch(facecolor=DISEASE_COLORS["CKD"], alpha=RIBBON_ALPHA, edgecolor="none", label="95% interval across donor-level binned summaries"),
+    Line2D([0], [0], marker="o", color="none", markerfacecolor="none", markeredgecolor="#111111", markersize=5.5, label="Fingerprint: ≥1 donor-supported gene"),
+    Line2D([0], [0], marker="s", color="#111111", lw=0, markersize=4, label="Fingerprint: ≥50% jointly supported"),
+]
+fig.legend(handles=legend_main, loc="lower center", bbox_to_anchor=(0.5, 0.012), ncol=4, frameon=False, fontsize=7.0)
+fig.suptitle("Complement remodelling across renal trajectories", y=0.998, fontsize=13, fontweight="bold")
+fig.subplots_adjust(left=0.075, right=0.955, top=0.905, bottom=0.085)
+save_figure(fig, MAIN_DIR / "Fig10_complement_trajectory_remodelling")
+
+# Caption-ready methodological notes saved outside the artwork.
+caption_notes = f"""Fig. 9 — Cross-sectional renal trajectories and disease-group associations
+Panel A: UMAP is display-only; frozen Slingshot pseudotime/weights define trajectory inference. Star = inferred root/early end; open circle = late end; arrow = early to late pseudotime.
+Panel B: metacell color is descriptive dominant disease label and does not represent donor-level prevalence or inferential enrichment.
+Panel C: occupancy = donor-level representation within lineage; pseudotime position = weighted mean donor position among represented cells. Coefficients are assay-adjusted disease-vs-healthy/reference coefficients from frozen 04c05 models. Healthy/reference is the model reference group. Only q < 0.05 coefficients are colored and outlined; gray cells are q ≥ 0.05 or unavailable. Interpretation is cross-sectional.
+
+Fig. 10 — Complement remodelling across renal trajectories
+Panel A: tile color is NOT a module score. The colorbar shows median late–early expression change, calculated among genes with both association and start/end FDR < 0.05. Tile opacity is fraction of module genes with joint support. Gray = no jointly supported genes. Open circle = at least one donor-supported gene; square = at least 50% of module genes jointly supported. Primary complement modules only; CFHR1–5 excluded from the main inferential summary.
+Panels B–F: black = all donors/available metacells; blue = CKD; orange = AKI; gray dash-dot = control/other. Ribbon = 95% interval across donor-level binned summaries when at least {MIN_DONORS_RIBBON} donors contribute, with at least {MIN_DONOR_METACELLS_BIN} metacells per donor within that bin. Curves are descriptive and do not constitute a formal disease-by-pseudotime interaction test.
+"""
+(OUTPUT_DIR / "Fig9_Fig10_caption_notes.txt").write_text(caption_notes)
+
+summary_lines.extend([
+    "Fig9_trajectory_disease_context: Main manuscript composite. Panel A shows the display-only UMAP architecture of the five frozen trajectories; Panel B shows descriptive dominant disease labels; Panel C shows assay-adjusted donor-level disease coefficients from frozen 04c05 models. Occupancy and pseudotime position are distinct donor-level endpoints.",
+    "Fig10_complement_trajectory_remodelling: Main manuscript composite. Panel A is a six-module lineage fingerprint excluding CFHR1–5 from the inferential summary; Panels B–F are PT C3, PT C1S, podocyte–PEC CR1, endothelial–mesangial CFH, and outer-medullary FIB C1R pseudotime curves with donor-level descriptive intervals.",
+])
+write_figure_summary(OUTPUT_DIR / "04d_figure_summary_and_interpretation.txt", summary_lines)
 
 # %% FINAL AUDIT
 outputs = sorted(OUTPUT_DIR.rglob("*"))
@@ -1926,19 +2420,15 @@ print(f"Figure files: {len(fig_files)}")
 print(f"Source-data CSVs: {len(source_files)}")
 print("\nMain outputs:")
 for p in [
-    MAIN_DIR / "complement_integrated_evidence.svg",
-    MAIN_DIR / "complement_disease_de_context.svg",
-    MAIN_DIR / "trajectory_umap_atlas.svg",
-    MAIN_DIR / "trajectory_disease_atlas.svg",
-    MAIN_DIR / "complement_gene_maps.svg",
-    MAIN_DIR / "complement_gene_pseudotime_showcase.svg",
-    MAIN_DIR / "complement_module_pseudotime.svg",
-    MAIN_DIR / "complement_program_river.svg",
-    MAIN_DIR / "complement_pulse_map.svg",
-    MAIN_DIR / "ckd_aki_divergence_map.svg",
-    MAIN_DIR / "complement_lineage_fingerprints.svg",
-    MAIN_DIR / "complement_trajectory_constellation.svg",
-    MAIN_DIR / "complement_showcase_early_late_dumbbells.svg",
+    MAIN_DIR / "Fig9_trajectory_disease_context.svg",
+    MAIN_DIR / "Fig10_complement_trajectory_remodelling.svg",
+]:
+    print(" ", p)
+print("\nPrimary source data:")
+for p in [
+    SOURCE_DIR / "Fig9C_disease_association_source_data.csv",
+    SOURCE_DIR / "Fig10A_complement_fingerprint_source_data.csv",
+    SOURCE_DIR / "Fig10B-F_pseudotime_showcase_source_data.csv",
 ]:
     print(" ", p)
 print("\nNotes:")
