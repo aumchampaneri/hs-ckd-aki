@@ -1,0 +1,25 @@
+gene,comparison_id_join,comparison,deseq2_p_value,deseq2_q_value,is_de_primary_q_0_05,n_donors_group1,n_donors_group2,n_cells_group1,n_cells_group2
+C1R,ckd_vs_normal,chronic kidney disease vs normal,0.9720523029446004,0.9892408213852608,False,95,88,317266,908762
+C1S,ckd_vs_normal,chronic kidney disease vs normal,0.6472416855322081,0.8331110449725911,False,95,88,317266,908762
+C3,ckd_vs_normal,chronic kidney disease vs normal,0.001834470545361,0.0292702249021237,True,95,88,317266,908762
+C5,ckd_vs_normal,chronic kidney disease vs normal,0.1593386254684983,0.4017104474424045,False,95,88,317266,908762
+CD55,ckd_vs_normal,chronic kidney disease vs normal,0.0031836052887395,0.0428675455529994,True,95,88,317266,908762
+CFH,ckd_vs_normal,chronic kidney disease vs normal,0.8739497529750873,0.947791567830212,False,95,88,317266,908762
+CR1,ckd_vs_normal,chronic kidney disease vs normal,0.1065150961620225,0.3212809537693911,False,95,88,317266,908762
+SERPING1,ckd_vs_normal,chronic kidney disease vs normal,0.4390836768746986,0.6891148392673723,False,95,88,317266,908762
+C1R,aki_vs_normal,acute kidney injury vs normal,8.799711456939049e-05,0.0009080247217282,True,40,88,141533,908762
+C1S,aki_vs_normal,acute kidney injury vs normal,0.0076667454833468,0.0335059850079781,True,40,88,141533,908762
+C3,aki_vs_normal,acute kidney injury vs normal,8.662481380434549e-23,2.186987799180376e-19,True,40,88,141533,908762
+C5,aki_vs_normal,acute kidney injury vs normal,0.00031777626924,0.0026038138086327,True,40,88,141533,908762
+CD55,aki_vs_normal,acute kidney injury vs normal,0.0007533280172237,0.0052514555015672,True,40,88,141533,908762
+CFH,aki_vs_normal,acute kidney injury vs normal,0.0032890123907528,0.0171238905980835,True,40,88,141533,908762
+CR1,aki_vs_normal,acute kidney injury vs normal,7.144494207523368e-05,0.0007651099205059,True,40,88,141533,908762
+SERPING1,aki_vs_normal,acute kidney injury vs normal,4.990297151795061e-06,8.123914159633702e-05,True,40,88,141533,908762
+C1R,aki_vs_ckd,acute kidney injury vs chronic kidney disease,0.0066401632272884,0.049289868183225,True,40,95,141533,317266
+C1S,aki_vs_ckd,acute kidney injury vs chronic kidney disease,0.010854811251949,0.0685688639022308,False,40,95,141533,317266
+C3,aki_vs_ckd,acute kidney injury vs chronic kidney disease,2.2708869527740483e-10,2.2213479744339033e-07,True,40,95,141533,317266
+C5,aki_vs_ckd,acute kidney injury vs chronic kidney disease,0.3466625324467084,0.5890932453718771,False,40,95,141533,317266
+CD55,aki_vs_ckd,acute kidney injury vs chronic kidney disease,0.1480463726974314,0.3628504240196926,False,40,95,141533,317266
+CFH,aki_vs_ckd,acute kidney injury vs chronic kidney disease,0.0072466612146017,0.0520105934815637,False,40,95,141533,317266
+CR1,aki_vs_ckd,acute kidney injury vs chronic kidney disease,0.0100631980706767,0.0650940789234982,False,40,95,141533,317266
+SERPING1,aki_vs_ckd,acute kidney injury vs chronic kidney disease,2.636035454983133e-05,0.0009656079389952,True,40,95,141533,317266

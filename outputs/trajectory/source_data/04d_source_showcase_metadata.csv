@@ -1,0 +1,9 @@
+compartment,trajectory,lineage,gene,module,start_end_logFC,association_q,start_end_q,donor_sig,display_score
+PT,PT,Lineage3,C3,alternative,5.58631010817289,0.0,0.0,True,6.931051684695482
+PT,PT,Lineage2,C1S,classical,-2.83821460345483,0.0,1.3689117447518817e-08,True,6.259398222283184
+Glomerular,podocyte_PEC,Lineage1,CR1,receptor,-4.12639738906222,0.0,0.0,False,3.6877328981770368
+Glomerular,endothelial_mesangial,Lineage3,CFH,regulator,4.52610218193538,2.9470547852072936e-08,1.165510530464803e-10,False,3.500759922542561
+Glomerular,endothelial_mesangial,Lineage1,C5,terminal,2.51879657863899,0.0072963989572997,5.29587548810091e-05,False,2.0610947959315484
+FIB,outer_medullary,Lineage1,C1R,classical,1.56049743276925,0.0,4.598345051983251e-09,False,3.093822749774093
+FIB,outer_medullary,Lineage1,SERPING1,regulator,1.51638173968085,0.0,5.687116192952504e-07,False,2.8772410798094303
+FIB,contractile,Lineage3,CD55,regulator,1.18278551018039,2.7750494957512473e-10,0.0133644120684206,False,2.3402088592146626

@@ -1,0 +1,48 @@
+gene,module,scoring_module,annotation_note
+C1QA,classical,True,canonical non-overlapping complement module
+C1QB,classical,True,canonical non-overlapping complement module
+C1QC,classical,True,canonical non-overlapping complement module
+C1R,classical,True,canonical non-overlapping complement module
+C1S,classical,True,canonical non-overlapping complement module
+C2,classical,True,canonical non-overlapping complement module
+C4A,classical,True,canonical non-overlapping complement module
+C4B,classical,True,canonical non-overlapping complement module
+C4BPA,classical,True,canonical non-overlapping complement module
+C4BPB,classical,True,canonical non-overlapping complement module
+MBL2,lectin,True,canonical non-overlapping complement module
+FCN1,lectin,True,canonical non-overlapping complement module
+FCN2,lectin,True,canonical non-overlapping complement module
+FCN3,lectin,True,canonical non-overlapping complement module
+MASP1,lectin,True,canonical non-overlapping complement module
+MASP2,lectin,True,canonical non-overlapping complement module
+MASP3,lectin,True,canonical non-overlapping complement module
+C3,alternative,True,canonical non-overlapping complement module
+CFB,alternative,True,canonical non-overlapping complement module
+CFD,alternative,True,canonical non-overlapping complement module
+CFP,alternative,True,canonical non-overlapping complement module
+C5,terminal,True,canonical non-overlapping complement module
+C6,terminal,True,canonical non-overlapping complement module
+C7,terminal,True,canonical non-overlapping complement module
+C8A,terminal,True,canonical non-overlapping complement module
+C8B,terminal,True,canonical non-overlapping complement module
+C8G,terminal,True,canonical non-overlapping complement module
+C9,terminal,True,canonical non-overlapping complement module
+C3AR1,receptor,True,canonical non-overlapping complement module
+C5AR1,receptor,True,canonical non-overlapping complement module
+C5AR2,receptor,True,canonical non-overlapping complement module
+CR1,receptor,True,canonical non-overlapping complement module
+CR2,receptor,True,canonical non-overlapping complement module
+ITGAM,receptor,True,canonical non-overlapping complement module
+ITGAX,receptor,True,canonical non-overlapping complement module
+VSIG4,receptor,True,canonical non-overlapping complement module
+CFH,regulator,True,canonical non-overlapping complement module
+CFI,regulator,True,canonical non-overlapping complement module
+CD46,regulator,True,canonical non-overlapping complement module
+CD55,regulator,True,canonical non-overlapping complement module
+CD59,regulator,True,canonical non-overlapping complement module
+SERPING1,regulator,True,canonical non-overlapping complement module
+CFHR1,cfhr,False,descriptive CFHR family; excluded from directional regulator composite
+CFHR2,cfhr,False,descriptive CFHR family; excluded from directional regulator composite
+CFHR3,cfhr,False,descriptive CFHR family; excluded from directional regulator composite
+CFHR4,cfhr,False,descriptive CFHR family; excluded from directional regulator composite
+CFHR5,cfhr,False,descriptive CFHR family; excluded from directional regulator composite
