@@ -4,9 +4,6 @@ This repository contains the computational workflow for a secondary analysis of 
 
 The analysis uses individual nuclei to characterize transcriptional heterogeneity and cell-state structure, while treating the donor as the biological replicate for disease-level statistical inference. Complement-associated RNA expression is interpreted as transcriptional remodeling and not as direct evidence of biochemical complement activation, pathway flux, protein cleavage, or therapeutic responsiveness.
 
-## Abstract
-[Insert]
-
 ---
 
 ## Environment
@@ -49,5 +46,5 @@ The workflow is organized into sequential stages:
   * Aggregates data to the donor level to perform primary disease contrasts (AKI vs. CKD vs. Normal) using PyDESeq2, avoiding cell-level pseudoreplication.
 
 
-* **04 — Metacells & Trajectory Analysis** (`04a_metacell.py` through `04c06_trajectory-tradeseq.py`)
+* **04 — Metacells & Trajectory Analysis** (`04a_metacell.py` through `04d_trajectory-complement-plot.py`)
   * Constructs donor-preserving SEACells, fits DECIPHER spaces, maps pseudotime trajectories via Slingshot/tradeSeq, and tests for disease associations.
