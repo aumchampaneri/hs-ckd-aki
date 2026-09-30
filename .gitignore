@@ -30,3 +30,8 @@ manuscript/figures/v1 figures/
 # too large to comit
 outputs/pseudobulk_de/reviewer_de_results_long.csv
 outputs/pseudobulk_de/all_pseudobulk_de_results.csv
+
+# Trajectory PDFs and SVGs
+outputs/trajectory/**/*.pdf
+outputs/trajectory/**/*.svg
+outputs/trajectory/**/*.tif
