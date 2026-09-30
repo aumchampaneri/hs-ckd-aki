@@ -1,0 +1,697 @@
+% Template for PLoS
+% Version 3.8 Apr 2026
+%
+% % % % % % % % % % % % % % % % % % % % % %
+%
+% -- IMPORTANT NOTE
+%
+% This template contains comments intended
+% to minimise problems and delays during our production
+% process. Please follow the template instructions
+% whenever possible.
+%
+% % % % % % % % % % % % % % % % % % % % % % %
+%
+% Once your paper is accepted for publication,
+% PLEASE REMOVE ALL TRACKED CHANGES in this file
+% and leave only the final text of your manuscript.
+% PLOS recommends the use of latexdiff to track changes during review, as this will help to maintain a clean tex file.
+% Visit https://www.ctan.org/pkg/latexdiff?lang=en for info.
+%
+%
+% IMPORTANT
+% Below are a few tips to help format manuscript according to our specifications. For more tips to help reduce the possibility of formatting errors during conversion, please see our LaTeX guidelines at http://journals.plos.org/plosone/s/latex
+%
+% There are no restrictions on package use within the LaTeX files except that no packages listed in the template may be deleted.
+%
+% Please do not include colors or graphics in the text.
+%
+% The manuscript LaTeX source should be contained within a single file (do not use \input, \externaldocument, or similar commands).
+%
+% % % % % % % % % % % % % % % % % % % % % % %
+%
+% -- FIGURES AND TABLES
+%
+% Please include tables/figure captions directly after the paragraph where they are first cited in the text.
+%
+% DO NOT INCLUDE GRAPHICS IN YOUR MANUSCRIPT
+% - Figures should be uploaded separately from your manuscript file.
+% - Figures generated using LaTeX should be extracted and removed from the PDF before submission.
+% - Figures containing multiple panels/subfigures must be combined into one image file before submission.
+% For figure citations, please use "Fig" instead of "Figure".
+% See http://journals.plos.org/plosone/s/figures for PLOS figure guidelines.
+%
+% Tables should be cell-based and may not contain:
+% - spacing/line breaks within cells to alter layout or alignment
+% - do not nest tabular environments (no tabular environments within tabular environments)
+% - no graphics or colored text (cell background color/shading OK)
+% See http://journals.plos.org/plosone/s/tables for table guidelines.
+%
+% For tables that exceed the width of the text column, use the adjustwidth environment as illustrated in the example table in text below.
+%
+% % % % % % % % % % % % % % % % % % % % % % % %
+%
+% -- EQUATIONS, MATH SYMBOLS, OTHER SPECIAL FORMATTING
+%
+% - For bold symbols, use the \boldsymbol command and not \mathbf.
+% - For inline equations, please be sure to include all portions of an equation in the math environment.  For example, x$^2$ is incorrect; this should be formatted as $x^2$ (or $\mathrm{x}^2$ if the romanized font is desired).
+% - Do not include text that is not math in the math environment. For example, CO2 should be written as CO\textsubscript{2} instead of CO$_2$.
+% - Avoid capturing simple text as equations, for example $<$.
+% - For inline equations, please do not include punctuation (commas, etc) within the math environment unless this is part of the equation.
+% - When adding superscript or subscripts outside of brackets/braces, please group using {}.  For example, change "[U(D,E,\gamma)]^2" to "{[U(D,E,\gamma)]}^2".
+% - Do not use \cal for caligraphic font.  Instead, use \mathcal{}.
+% - Avoid splitting for fragmenting a single equation into multiple objects/environments, for example $f(x)$ = $g(x)$ + $h(x)$.
+% - Use math environment for all equations, do not mimic using text.
+% - Avoid using single letters in math mode where possible.
+% - Always use matching parentheses and delimiters, avoid mixing math and text brackets.
+% - Insert spaces around inline equations to ensure proper display after conversion.
+% - Do not use forced numbers for display equation labeling or suppress numbering with \nonumber.
+%
+% % % % % % % % % % % % % % % % % % % % % % % %
+%
+% Please contact customercare@plos.org with any questions.
+%
+% % % % % % % % % % % % % % % % % % % % % % % %
+
+\documentclass[10pt,letterpaper]{article}
+\usepackage[top=0.85in,left=2.75in,footskip=0.75in]{geometry}
+
+% amsmath and amssymb packages, useful for mathematical formulas and symbols
+\usepackage{amsmath,amssymb}
+
+% Use adjustwidth environment to exceed column width (see example table in text)
+\usepackage{changepage}
+
+% textcomp package and marvosym package for additional characters
+\usepackage{textcomp,marvosym}
+
+% cite package, to clean up citations in the main text. Do not remove.
+\usepackage{cite}
+
+% Use nameref to cite supporting information files (see Supporting Information section for more info)
+\usepackage{nameref,hyperref}
+\hypersetup{
+  colorlinks   = true, %Colours links instead of ugly boxes
+  urlcolor     = blue, %Colour for external hyperlinks
+  linkcolor    = blue, %Colour of internal links
+  citecolor   = red %Colour of citations
+}
+
+% line numbers
+\usepackage[right]{lineno}
+
+% ligatures disabled
+\usepackage[nopatch=eqnum]{microtype}
+\DisableLigatures[f]{encoding = *, family = * }
+
+% color can be used to apply background shading to table cells only
+\usepackage[table]{xcolor}
+
+% array package and thick rules for tables
+\usepackage{array}
+
+% create "+" rule type for thick vertical lines
+\newcolumntype{+}{!{\vrule width 2pt}}
+
+% create \thickcline for thick horizontal lines of variable length
+\newlength\savedwidth
+\newcommand\thickcline[1]{%
+  \noalign{\global\savedwidth\arrayrulewidth\global\arrayrulewidth 2pt}%
+  \cline{#1}%
+  \noalign{\vskip\arrayrulewidth}%
+  \noalign{\global\arrayrulewidth\savedwidth}%
+}
+
+% \thickhline command for thick horizontal lines that span the table
+\newcommand\thickhline{\noalign{\global\savedwidth\arrayrulewidth\global\arrayrulewidth 2pt}%
+\hline
+\noalign{\global\arrayrulewidth\savedwidth}}
+
+
+% Remove comment for double spacing
+\usepackage{setspace}
+\doublespacing
+
+% Text layout
+\raggedright
+\setlength{\parindent}{0.5cm}
+\textwidth 5.25in
+\textheight 8.75in
+
+% Bold the 'Figure #' in the caption and separate it from the title/caption with a period
+% Captions will be left justified
+\usepackage[aboveskip=1pt,labelfont=bf,labelsep=period,justification=raggedright,singlelinecheck=off]{caption}
+\renewcommand{\figurename}{Fig}
+
+% Please use the included `plos2025.bst` as your BibTeX style
+\bibliographystyle{plos2025}
+
+% Remove brackets from numbering in List of References
+\makeatletter
+\renewcommand{\@biblabel}[1]{\quad#1.}
+\makeatother
+
+
+
+% Header and Footer with logo
+\usepackage{lastpage,fancyhdr,graphicx}
+\usepackage{epstopdf}
+%\pagestyle{myheadings}
+\pagestyle{fancy}
+\fancyhf{}
+%\setlength{\headheight}{27.023pt}
+%\lhead{\includegraphics[width=2.0in]{PLOS-submission.eps}}
+\rfoot{\thepage/\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrule}{\hrule height 2pt \vspace{2mm}}
+\fancyheadoffset[L]{2.25in}
+\fancyfootoffset[L]{2.25in}
+\lfoot{\today}
+
+%% Include all user-defined macros below
+
+\newcommand{\lorem}{\textbf{LOREM}}
+\newcommand{\ipsum}{\textbf{IPSUM}}
+
+%% END MACROS SECTION
+
+
+\begin{document}
+\vspace*{0.2in}
+
+% Title must be 250 characters or less.
+\begin{flushleft}
+{\Large
+\textbf{Cell-resolved mapping reveals distinct complement transcriptional programs in acute and chronic human kidney injury} % Please use "sentence case" for title and headings (capitalize only the first word in a title (or heading), the first word in a subtitle (or subheading), and any proper nouns).
+}
+\newline
+\textbf{Short title:} Complement transcription in human kidney injury
+\newline
+% Insert author names, affiliations and corresponding author email (do not include titles, positions, or degrees).
+\\
+\href{https://orcid.org/0009-0006-0385-9832}{Aum Champaneri}\textsuperscript{1\ddag},
+Jessy J. Alexander\textsuperscript{1*\ddag},
+\\
+\bigskip
+\textbf{1} Section of Nephrology, Department of Medicine, Jacobs School of Medicine and Biomedical Sciences, University at Buffalo, Buffalo, NY 14203, USA.
+\\
+\bigskip
+
+% Insert additional author notes using the symbols described below. Insert symbol callouts after author names as necessary.
+%
+% Remove or comment out the symbols in the byline and the author notes below if they aren't used.
+%
+% Primary Equal Contribution Note
+\ddag These authors contributed equally to this work.
+
+
+
+% Use the asterisk to denote corresponding authorship and provide email address in note below.
+* jessyale@buffalo.edu
+
+\end{flushleft}
+% Please keep the abstract below 300 words
+
+\section*{Abstract}
+
+\textbf{Background:}
+The complement system contributes to acute and chronic kidney injury, but its transcriptional organisation across human renal cell populations and disease-associated states remains incompletely defined. We examined cell-type-specific complement transcription in acute kidney injury (AKI), chronic kidney disease (CKD), and normal/reference human kidney tissue using a large single-nucleus RNA-sequencing atlas.
+
+\bigskip
+\noindent
+\textbf{Methods and Findings:}
+We analysed 1,367,561 nuclei from 223 donors, including 40 with AKI, 95 with CKD, and 88 normal/reference donors. Transcriptomes were integrated using scVI, and complement-associated expression was summarised using six non-overlapping transcriptional programs. Disease-associated differential expression was evaluated using donor-level pseudobulk models, with additional cell-type-specific, cross-disease, and cross-sectional trajectory analyses. At the whole-kidney level, 25 of 41 evaluable primary complement genes were differentially expressed in AKI versus normal/reference kidney, compared with 3 of 41 in CKD versus normal/reference kidney and 16 of 41 in AKI versus CKD. AKI-associated changes were broad in proximal tubular, myeloid, fibroblast, endothelial, and thick ascending limb populations, although both positive and negative changes occurred. Podocytes showed no statistically significant primary complement-gene differences in any disease comparison. AKI and CKD shared partial transcriptional concordance, with 27 of 41 primary complement genes changing in the same direction. Complement expression also varied across several renal cell-state trajectories, with the broadest donor-supported trajectory-associated changes in proximal tubular states.
+
+\bigskip
+\noindent
+\textbf{Conclusion:}
+AKI and CKD are associated with distinct but partly concordant patterns of complement transcriptional remodelling that vary by renal cell type and cell state. These findings define the cellular organisation of complement-associated transcription in human kidney injury, while transcript abundance alone does not establish biochemical complement activation or temporal disease progression.
+
+\section*{Keywords:}
+Complement, acute kidney injury, chronic kidney disease, single-nucleus RNA sequencing, pseudobulk differential expression, renal cell states, kidney transcriptomics
+
+% Please keep the Author Summary between 150 and 200 words. Use first person.
+% PLOS ONE, PLOS Biology, PLOS Global Public Health, PLOS Mental Health, and PLOS Water authors please skip this step. Author Summary is not valid for submissions to these journals.
+
+\clearpage
+\newgeometry{top=0.85in,left=1in,right=1in,footskip=0.75in}
+\linenumbers
+
+\section*{Introduction}
+
+Acute kidney injury (AKI) and chronic kidney disease (CKD) are major causes of morbidity, mortality, and healthcare expenditure worldwide. Although their initiating causes and clinical courses differ, both involve inflammatory and tissue-injury responses that can affect epithelial, endothelial, immune, and stromal compartments of the kidney. Increasing evidence implicates the complement system in many of these processes. Dysregulated complement activity contributes to a range of renal disorders, including atypical haemolytic uremic syndrome \cite{wongFunctionalCharacterizationRare2021}, C3 glomerulopathy \cite{smithC3GlomerulopathyUnderstanding2019a}, lupus nephritis \cite{walportComplementSystemicLupus2002a}, IgA nephropathy \cite{menonRolePodocyteInjury2013}, diabetic kidney disease \cite{jiangActivationComplementPathways2022}, ischaemia-reperfusion injury \cite{thurmanC3aRequiredProduction2007}, and sepsis-associated AKI \cite{markiewskiComplexityComplementActivation2008}.
+
+The complement cascade can be initiated through the classical, lectin, and alternative pathways, which converge on C3 cleavage and downstream generation of inflammatory and terminal effector molecules including C3a, C5a, and the membrane attack complex (Fig.~\ref{fig1}) \cite{walportComplementSecondTwo2001,walportComplementFirstTwo2001}. Complement activity is constrained by soluble and membrane-bound regulators and is therefore shaped by the balance between complement components, receptors, and regulatory proteins rather than by expression of a single pathway alone. Although complement has historically been considered primarily a liver-derived circulating system, complement components can also be synthesised by tissue-resident and infiltrating cells. Intracellular complement-associated signalling, sometimes termed the complosome, has further expanded the biological contexts in which complement genes may be relevant \cite{westComplosomeIntracellularComplement2023}. However, transcription of complement-associated genes does not by itself establish extracellular or intracellular complement activation.
+
+\begin{figure}[!h]
+\caption{\textbf{The complement cascade.}
+Schematic overview of the complement system. The classical, lectin, and alternative pathways converge on C3 cleavage, generating downstream inflammatory mediators including C3a and C5a and the membrane attack complex (MAC). Soluble and membrane-bound regulators constrain complement activity and limit host-tissue injury. Complement-associated genes included in this study span classical, lectin, alternative, terminal, receptor, and regulatory functional categories.}
+\label{fig1}
+\end{figure}
+
+The kidney contains multiple cell populations capable of expressing complement components or responding to complement-derived signals, and experimental and clinical studies support important roles for complement in both acute and chronic renal injury \cite{willowsRoleComplementKidney2020a,thurmanComplementKidneyOverview2020a}. Nevertheless, much of the available evidence is derived from circulating biomarkers, tissue-level measurements, animal models, or selected renal compartments. These approaches provide limited information on how complement-associated transcription differs among human renal cell populations, and bulk tissue measurements can obscure opposing or cell-type-restricted expression patterns. This distinction is important because increased expression of one complement component may occur alongside reduced expression of receptors or regulators in the same or another cell population, making a single tissue-level measure difficult to interpret biologically.
+
+Large human kidney single-cell and single-nucleus atlases now provide an opportunity to examine these questions at cellular resolution \cite{lakeAtlasHealthyInjured2023}. However, several analytical issues remain important. Individual nuclei are not independent biological replicates for disease-level inference, and cell-level transcriptional scores should therefore be distinguished from donor-level statistical analyses. In addition, transcriptional manifolds derived from cross-sectional tissue samples may identify related cell states but cannot establish longitudinal transitions between AKI and CKD. Finally, complement RNA expression should be interpreted as complement-associated transcription rather than direct measurement of protein cleavage, pathway flux, or therapeutic responsiveness.
+
+In the present study, we analysed more than 1.3 million human kidney nuclei from normal/reference, AKI, and CKD specimens to define complement-associated transcription across renal cell populations. We first characterised six non-overlapping complement transcriptional programs across the integrated kidney atlas and then used donor-level pseudobulk differential expression to compare AKI, CKD, and normal/reference kidneys globally and within individual cell populations. We further evaluated the extent to which AKI- and CKD-associated transcriptional effects were concordant, and examined complement expression across prespecified proximal tubular, fibroblast, and glomerular cell-state trajectories. We hypothesised that complement-associated transcription would differ substantially between renal cell types and disease groups rather than behaving as a uniform kidney-wide program. The study was designed to identify cell-type- and state-associated patterns of complement transcription in human kidney injury.
+\section*{Materials and Methods}
+
+\subsection*{Study design}
+
+We performed a secondary analysis of publicly available human kidney single-nucleus RNA-sequencing (snRNA-seq) data to characterise cell-type-specific complement-associated transcriptional programs in acute kidney injury (AKI), chronic kidney disease (CKD), and normal/reference kidney tissue. The study was cross-sectional and exploratory. Individual nuclei were used to characterise transcriptional heterogeneity and construct cell-state representations, whereas the donor was treated as the biological replicate for disease-level statistical inference.
+
+Because the source data were cross-sectional and derived from independent donors, transcriptional manifolds and pseudotime analyses were interpreted as inferred cell-state continua rather than direct temporal trajectories from AKI to CKD. Likewise, complement-associated RNA expression was interpreted as evidence of complement-related transcriptional programs and not as direct evidence of biochemical complement activation, pathway flux, protein cleavage, or therapeutic responsiveness.
+
+\subsection*{Data acquisition and dataset provenance}
+
+Kidney snRNA-seq data were accessed through the CELLxGENE Census \cite{programCZCELLxGENEDiscover2023} using dataset identifier \texttt{7ff0197b-d175-49bf-b4fa-150fe0995d93}. At the time of data acquisition (28 June 2026 at 17:52), this dataset was available through the current CELLxGENE Census release (\texttt{census\_version="latest"}) and was not available in a corresponding published frozen Census release. The dataset identifier was retained together with the downloaded source object so that downstream analyses were performed from a fixed local input after acquisition.
+
+The source dataset derives from a large-scale human kidney cell atlas characterising healthy and injured renal cell states \cite{lakeAtlasHealthyInjured2023}. The final analytic cohort comprised 223 donors and 1,367,561 nuclei, including 40 donors with AKI (141,533 nuclei), 95 donors with CKD (317,266 nuclei), and 88 normal/reference donors (908,762 nuclei). Donor-level demographic and clinical metadata and metadata missingness were summarised before statistical modelling.
+
+\subsection*{Clinical group definitions and donor characteristics}
+
+Disease-group assignments were inherited from the harmonised annotations of the source kidney atlas and were not independently reassigned in this study \cite{lakeAtlasHealthyInjured2023}. Donors were categorised as AKI, CKD, or normal/reference kidney using the provided source disease annotation. Specific source annotations included acute kidney injury, diabetic kidney disease, hypertensive chronic kidney disease, and healthy reference tissue. The atlas integrated specimens from multiple contributing cohorts and tissue sources. Accordingly, these categories were treated as source-defined clinical classifications rather than diagnoses reconstructed from transcriptomic data or primary medical records.
+
+Available donor metadata included age, sex, race, binned baseline estimated glomerular filtration rate (eGFR), diabetes and hypertension history, anatomical region, tissue-collection procedure, and assay platform. Additional clinical information, including KDIGO AKI stage, proteinuria, albuminuria, glycated haemoglobin, and other disease-specific characteristics, was available for subsets of donors. Availability varied among contributing cohorts; therefore, clinical variables were evaluated at the donor level before statistical modelling. Available source-level experiment, demographic, clinical, anatomical, and collection metadata are summarised in \nameref{S1_Table}.
+
+For covariate assessment, selected metadata variables were coarsened where necessary to reduce sparse categories. Age and race were grouped, baseline eGFR categories were collapsed to $<60$ versus $\geq60$ mL/min/1.73 m$^2$, anatomical region to cortex-containing versus medulla/other, and tissue-collection procedure to biopsy versus surgical procurement. These transformations were performed for covariate assessment and statistical modelling and did not alter the inherited disease-group assignments.
+
+
+\subsection*{Data quality assessment and preprocessing}
+
+Initial quality-control assessment was performed on the source count matrix before downstream modelling. Counts were checked for finite, non-negative, integer-valued entries. Per-nucleus total transcript count, number of detected genes, and mitochondrial transcript fraction were calculated. Median absolute deviation (MAD)-based thresholds were generated as diagnostic summaries, and haemoglobin-gene expression was additionally explored as a potential quality indicator. These diagnostic thresholds were not used as additional nucleus-exclusion criteria.
+
+Putative doublets were identified independently within each \texttt{experiment\_id} using Scrublet \cite{Wolock_Lopez_Klein_2019} and nuclei classified as predicted doublets were removed. Ambient RNA contamination was subsequently estimated separately within each experiment using decontX \cite{Yang_Corbett_Koga_Wang_Johnson_Yajima_Campbell_2020}. For sufficiently large experimental batches, a temporary normalised/log-transformed representation, highly variable gene selection, principal-component analysis, nearest-neighbour graph, and Leiden clustering \cite{Traag_Waltman2019} were used to provide decontX with within-batch cluster labels. Experimental batches containing fewer than 50 nuclei were retained without decontX correction because stable within-batch estimation was not considered feasible.
+
+The decontX-corrected expression estimates were rounded to integer counts for count-based downstream analyses. The resulting decontaminated matrix replaced the working count matrix, while the original downloaded input remained separately available. A full-gene decontaminated expression snapshot was retained before subsequent highly variable gene subsetting. Complement scoring and donor-level pseudobulk analyses were based on the full-gene decontaminated representation rather than on highly variable gene subset used for latent representation learning.
+
+\subsection*{Latent representation with scVI and dimensionality reduction}
+
+Highly variable genes were identified using Poisson gene selection, retaining the top 4,000 genes. A single-cell variational inference (scVI) model \cite{lopezDeepGenerativeModeling2018, gayosoPythonLibraryProbabilistic2022} was then fitted to the decontaminated count matrix. \texttt{experiment\_id} was modelled as the primary batch variable and assay platform was included as a categorical covariate. The model used two hidden layers, 256 hidden units, a 30-dimensional latent representation, a dropout rate of 0.1, and a negative-binomial gene-likelihood model. Training was performed for a maximum of 500 epochs with batch size 2,048 and early stopping based on validation evidence lower bound (ELBO), with patience of 20 epochs.
+
+The resulting 30-dimensional scVI latent representation was used to construct a 15-nearest-neighbour graph using Scanpy \cite{wolfSCANPYLargescaleSinglecell2018a}. Uniform manifold approximation and projection (UMAP) \cite{mcinnesUMAPUniformManifold2020} was calculated with \texttt{min\_dist=0.3} for visualisation. UMAP coordinates were used as a visualisation of transcriptional similarity and were not interpreted as physical or spatial coordinates.
+
+\subsection*{Complement-related transcriptional gene sets}
+
+Complement-associated genes were organised into six mutually exclusive functional transcriptional modules to minimise gene overlap between composite scores:
+
+\begin{itemize}
+\item \textbf{Classical:} \textit{C1QA, C1QB, C1QC, C1R, C1S, C2, C4A, C4B, C4BPA, C4BPB};
+\item \textbf{Lectin:} \textit{MBL2, FCN1, FCN2, FCN3, MASP1, MASP2, MASP3};
+\item \textbf{Alternative:} \textit{C3, CFB, CFD, CFP};
+\item \textbf{Terminal:} \textit{C5, C6, C7, C8A, C8B, C8G, C9};
+\item \textbf{Receptor:} \textit{C3AR1, C5AR1, C5AR2, CR1, CR2, ITGAM, ITGAX, VSIG4};
+\item \textbf{Regulator:} \textit{CFH, CFI, CD46, CD55, CD59, SERPING1}.
+\end{itemize}
+
+Module assignment was guided by established descriptions of complement pathway organisation \cite{merleComplementSystemPart2015, merleComplementSystemPart2015a, thurmanComplementKidneyOverview2020a}.
+
+The complement factor H-related genes \textit{CFHR1-CFHR5} were retained as a separate descriptive gene set and were not incorporated into the regulatory or composite complement scores \cite{ferreiraComplementControlProtein2010a}. At least two represented genes were required for calculation of a module score. In the final expression matrix, all prespecified complement genes were represented except \textit{MASP3}; thus, six of seven lectin-associated genes contributed to the lectin score, while all genes in the other five module definitions were represented.
+
+These gene sets were intended to summarise complement-related transcription and were not interpreted as direct measures of extracellular complement activation or protein-level pathway activity \cite{westComplosomeIntracellularComplement2023}.
+
+\subsection*{Cell-level complement transcriptional scoring}
+
+Cell-level complement transcriptional programs were estimated using univariate linear model (ULM) scoring implemented in decoupleR \cite{Badia-i-Mompel2022}. Scores were calculated from the full-gene decontaminated expression representation rather than the 4,000-gene scVI input matrix. Module membership was represented as an unweighted gene-to-module network, and a minimum of two represented genes was required per module.
+
+ULM scores were standardised across nuclei as $z$ scores. In addition to the six individual modules, exploratory composite transcriptional summaries were calculated. A production score summarised the classical, lectin, alternative, and terminal modules; a response score represented the receptor module; and an exploratory complement transcriptional balance score summarised the relative expression of classical, lectin, alternative, terminal, and receptor programs versus the regulatory program. A broader net-complement score summarised all six modules. The dominant transcriptional program for each nucleus was defined as the module with the largest standardised score.
+
+These composites were used for descriptive visualisation and state characterisation rather than donor-level disease inference. In particular, the complement transcriptional balance score was not interpreted as a biochemical ``activation index.''
+
+\subsection*{Validation and sensitivity analysis of complement scores}
+
+Potential associations between complement transcriptional scores and technical or quality-control variables were evaluated as sensitivity analyses. Continuous variables, including total transcript count, detected gene number, and mitochondrial transcript fraction, were evaluated using Spearman correlations. Categorical donor and experiment effects were initially summarised using nonparametric group comparisons and approximate effect-size measures. Given the large number of nuclei, interpretation emphasized association magnitude rather than statistical significance alone.
+
+Mixed-effects models were additionally used to characterise donor and experiment-associated variability while accounting for disease group and broad cell class. To prevent donors contributing very large numbers of nuclei from dominating these analyses, a maximum of 500 nuclei per donor was randomly sampled. Disease group and broad cell class were included as fixed effects, with donor and experiment represented as crossed variance components.
+
+As an independent scoring-method sensitivity analysis, the six complement modules were rescored using AUCell \cite{Aibar_2017}. A random subsample of up to 300,000 nuclei was used for computational tractability. The full-gene expression representation was normalised and log-transformed before AUCell scoring. Agreement between ULM and AUCell-derived module scores was quantified using Spearman correlation. This analysis was interpreted as a sensitivity analysis to scoring framework rather than external biological validation.
+
+Leave-one-gene-out sensitivity analysis was performed using a random subsample of up to 50,000 nuclei. Each represented gene was sequentially removed from its corresponding module, the ULM score was recalculated, and the reduced-module score was compared with the complete-module score using Spearman correlation. A correlation below 0.90 was specified as a flag indicating potential sensitivity of a module score to an individual gene. Modules for which gene removal would leave fewer than the minimum number of genes required for scoring were not evaluated for that comparison.
+
+\subsection*{Donor-level pseudobulk aggregation}
+
+Disease-associated differential expression was evaluated using donor-level pseudobulk profiles, with the donor treated as the biological replicate \cite{Zimmerman_Espeland_Langefeld_2021, Squair_Gautier_Kathe_Anderson_James_Hutson_Hudelle_Qaiser_Matson_Barraud}. Decontaminated integer counts were summed within donors using decoupler/ADPBulk \cite{Badia-i-Mompel2022}. Pseudobulk samples containing fewer than 25 nuclei were excluded.
+
+Genes were retained for differential-expression testing when they had at least 20 total counts and were detected in at least three donors in the relevant analysis. Cell-type-specific analyses were performed for \texttt{SubclassLevel1} populations containing at least 500 nuclei overall and at least five eligible donors per disease group for the relevant contrast.
+
+Three specified disease contrasts were evaluated: CKD versus normal/reference, AKI versus normal/reference, and AKI versus CKD.
+
+\subsection*{Assessment of clinical and technical covariates}
+
+Candidate donor-level adjustment variables included assay platform, sex, diabetes history, hypertension, race, age, eGFR, anatomical region, and tissue-collection method. Before model fitting, donor representation was cross-tabulated by candidate covariate and disease group. A candidate covariate was considered estimable only when each represented covariate-level-by-disease-group combination contained at least three donors. Variables that were not invariant within donors were excluded from donor-level adjustment.
+
+The covariate audit identified sex, diabetes history, hypertension, grouped race, and grouped age as estimable adjustment variables for the global differential-expression analyses. The global model design was therefore
+
+$$
+\sim \mathrm{sex}
++ \mathrm{diabetes}
++ \mathrm{hypertension}
++ \mathrm{race}
++ \mathrm{age}
++ \mathrm{disease}.
+$$
+
+Complete case filtering was performed separately for each contrast because missing covariate values were not encoded as an additional category. If an adjusted contrast failed to retain the prespecified minimum donor representation after complete case filtering, the analysis pipeline was configured to revert to a disease only model and record that fallback explicitly. None of the three global comparisons required this fallback. The CKD-versus-normal model contained 94 CKD and 72 normal donors, representing 311,889 and 772,784 nuclei, respectively. The AKI-versus-normal model contained 34 AKI and 72 normal donors, representing 124,074 and 772,784 nuclei. The AKI-versus-CKD model contained 34 AKI and 94 CKD donors, representing 124,074 and 311,889 nuclei.
+
+Cell-type specific models used the same prespecified covariate-audit and fallback framework. Exact fitted donor counts and model specifications were retained in the analysis outputs for reproducibility.
+
+\subsection*{Differential-expression analysis}
+
+Differential expression was performed using PyDESeq2 \cite{muzellec2023pydeseq2} on donor-level pseudobulk count matrices. Count matrices were rounded to integer values before model fitting. DESeq2 models were fitted with Cook's-distance refitting enabled, and Cook's-distance filtering and independent filtering were applied during statistical testing. The disease contrast was specified explicitly for each pairwise comparison.
+
+Both maximum-likelihood log$_2$ fold-change estimates and PyDESeq2-shrunken estimates were retained in the analysis outputs. Shrinkage was performed using the \texttt{DeseqStats.lfc\_shrink} implementation.
+
+The CKD-versus-normal, AKI-versus-normal, and AKI-versus-CKD global analyses tested 33,801, 33,603, and 32,781 genes, respectively, after expression filtering. Statistical significance was defined as a Benjamini-Hochberg-adjusted $P$ value ($q$ value) $<0.05$. Nonsignificant tested complement genes were retained in complement-specific result tables so that the denominator of each complement-gene comparison reflected all complement genes that were actually tested rather than only significant genes.
+
+\subsection*{Cross-disease transcriptional concordance}
+
+To characterise shared versus disease-specific transcriptional responses, log$_2$ fold-change estimates were compared across disease contrasts for genes tested in both comparisons. Concordance was summarised using Spearman and Pearson correlations and by comparing the direction of effect among genes meeting the prespecified false-discovery threshold in both contrasts. These analyses were interpreted as descriptive comparisons of transcriptional effect patterns rather than evidence of a temporal relationship between AKI and CKD.
+
+\subsection*{Donor-level complement pathway analysis}
+
+Complement transcriptional programs were additionally evaluated directly at the donor level using the finalized non-overlapping gene sets. Decontaminated integer counts were aggregated by donor, converted to counts per million (CPM), and transformed as $\log(1+\mathrm{CPM})$. For each represented gene, expression was standardised across donors, and pathway scores were calculated as the mean standardised expression of represented genes in the corresponding module.
+
+These analyses used the complete eligible donor groups (40 AKI, 95 CKD, and 88 normal donors) rather than the complete case subset used in covariate-adjusted differential-expression models. Pairwise disease group differences were evaluated using two-sided Mann-Whitney $U$ tests. For each disease contrast, multiple-testing correction was performed using the Benjamini--Hochberg procedure across the seven prespecified complement-level hypotheses comprising the six complement modules and the composite complement score.
+
+\subsection*{Metacell construction}
+
+To reduce cell-level redundancy and support downstream manifold analysis, donor-preserving metacells were constructed within prespecified renal compartments using SEACells \cite{Persad2022.04.02.486748}. Metacell construction was performed using the scVI latent representation, with a target of approximately 50 nuclei per metacell. Donors with fewer than 50 eligible nuclei were represented by a single metacell, whereas larger donor subsets were assigned a number of metacells approximately proportional to their cell count. Metacells were never constructed across donors.
+
+For each metacell, decontaminated counts were summed across constituent nuclei and scVI latent coordinates were averaged. Metadata were summarised from constituent nuclei, including dominant disease, cell state/subclass, and assay where available, together with corresponding purity measures. Metacells with disease or assay purity below 0.60 were flagged for quality assessment rather than automatically removed. Full-gene count matrices were retained for downstream trajectory-associated gene-expression modelling.
+
+\subsection*{DECIPHER representation of metacell states}
+
+A DECIPHER latent representation \cite{nazaretJointRepresentationVisualization2025} was fitted to the metacell count matrices for downstream state-manifold analysis. For each analysed compartment, the top 2,000 highly variable genes were selected from metacell-level counts using the Seurat v3 \cite{seurat3} procedure. DECIPHER was trained on the count layer using a two-dimensional $v$ representation and a 10-dimensional $z$ representation for up to 400 epochs. The trained model and both latent representations were retained for downstream analyses.
+
+DECIPHER coordinates were examined by disease group, donor, cell-state annotation, and assay platform as diagnostic analyses. Donor-level mean latent coordinates were additionally generated to assess whether apparent metacell level structure was disproportionately influenced by individual donors. These analyses were treated as representation diagnostics rather than primary disease-level inference.
+
+\subsection*{Cell-state manifold and trajectory inference}
+
+Trajectory analysis was performed on specified biologically related metacell populations using the DECIPHER representation. Five primary trajectories were evaluated: proximal tubular states; contractile fibroblast states; outer-medullary fibroblast states; podocyte/parietal epithelial cell states; and glomerular endothelial/mesangial states.
+
+Primary roots were specified using reference-like cell identities rather than complement score, disease severity, or the downstream disease association. The proximal-tubule trajectory was rooted in a PT-S1 state, the contractile fibroblast trajectory in C-FIB, the outer-medullary fibroblast trajectory in OM-FIB, the podocyte/parietal epithelial trajectory in POD, and the endothelial/mesangial trajectory in EC-GC. Alternative biologically plausible root clusters were prespecified for sensitivity analyses. Disease labels were not used to select or reorient the primary roots.
+
+Nearest-neighbour graphs and Leiden clusters \cite{Traag_Waltman2019} were constructed within the relevant trajectory subsets, and PAGA \cite{Wolf_Hamey_Plass_Solana_Dahlin_Göttgens_Rajewsky_Simon_Theis_2019} was used to summarise graph connectivity. Small clusters containing fewer than 10 metacells were excluded from topology construction, and a PAGA connectivity threshold of 0.03 was used. Slingshot \cite{Street_Risso_Fletcher_Das_Ngai_Yosef_Purdom_Dudoit_2018} was then used to estimate lineage structure and continuous pseudotime along the prespecified trajectories, with approximately 150 points used for fitted lineage curves.
+
+Pseudotime orientation was fixed by the prespecified biological root. Pseudotime was not reversed or otherwise reoriented on the basis of disease group, complement score, or the sign of a downstream association. Accordingly, subsequent associations between pseudotime, disease, and complement-related transcription were evaluated against a trajectory definition established independently of those outcomes.
+
+\subsection*{Trajectory robustness analyses}
+
+Trajectory robustness was evaluated using complementary sensitivity analyses. First, primary Slingshot solutions were compared with trajectories generated using alternative prespecified root states. Second, trajectory solutions were evaluated across alternative latent representations, with lineage correspondence assessed after matching sensitivity lineages to primary lineages. Agreement in metacell ordering was summarised using Spearman correlations.
+
+Diffusion pseudotime (DPT) \cite{haghverdiDiffusionPseudotimeRobustly2016} provided an additional trajectory-ordering sensitivity analysis. DPT was calculated using the primary DECIPHER geometry. Within the previously defined root cluster, the DPT root metacell was selected as the observation nearest the centroid of that root cluster; disease labels were not used for root selection. DPT ordering was then compared with the corresponding primary Slingshot pseudotime.
+
+Donor-subsampling analyses were additionally used to evaluate whether inferred trajectories were disproportionately dependent on particular donors. Primary and sensitivity trajectories used the same prespecified trajectory populations and biological rooting scheme.
+
+\subsection*{Donor-level trajectory summaries and disease association}
+
+Metacell-level Slingshot results were summarised at the donor level before disease-association testing. For each donor and lineage, the analysis quantified lineage support/occupancy and conditional trajectory position. Lineage occupancy was represented by the fraction of donor metacells supporting the lineage. Conditional position was summarised using lineage-weighted mean pseudotime among donors with finite pseudotime and lineage support.
+
+Disease associations were evaluated only for endpoints with adequate donor representation, requiring at least five donors per disease group. Disease-by-assay overlap was audited before adjusted sensitivity modelling, with disease--assay cells containing at least three donors considered substantively represented.
+
+Primary donor-level disease tests consisted of Kruskal-Wallis omnibus tests followed by pairwise Mann-Whitney $U$ tests, with rank-biserial correlation used as an effect-size measure. Where disease and assay were sufficiently identifiable, assay-adjusted sensitivity models were fitted using ordinary least squares with HC3 robust standard errors and the form
+
+$$
+\mathrm{outcome} \sim C(\mathrm{disease}) + C(\mathrm{assay}).
+$$
+
+Benjamini-Hochberg correction was applied separately to lineage-level omnibus tests, pairwise tests, and assay-adjusted disease coefficients for each trajectory endpoint. No trajectory was selected, removed, rerooted, or otherwise modified on the basis of these disease-association results.
+
+\subsection*{Trajectory-associated gene-expression analysis}
+
+Gene-expression changes along the frozen primary trajectories were evaluated using tradeSeq \cite{vandenbergeTrajectoryBasedDifferential2020}. For each trajectory, metacell count matrices, Slingshot pseudotime values, and lineage weights from the primary trajectory analysis were used without re-estimating or reorienting trajectories according to disease status or gene expression. Genes were retained for modelling when they had at least 3 counts in at least 10 metacells and at least 20 counts in total. Library-size normalisation factors were estimated using the trimmed mean of M-values (TMM) method. The number of knots was evaluated from 3 through 8 and fixed at 8 for the final generalised additive models, which were fitted separately for the five prespecified trajectories.
+
+Inferential testing was subsequently performed on the frozen fitted models without refitting the generalised additive models or modifying pseudotime, lineage weights, normalisation factors, gene filters, or knot number. The primary test was the tradeSeq association test, which evaluated whether gene expression varied significantly with pseudotime. Start-versus-end tests were used to characterise the direction of expression differences between the beginning and endpoint of each lineage. For trajectories containing multiple lineages, endpoint-difference and pattern tests were additionally performed as secondary analyses to evaluate differences between lineage endpoints and expression patterns, respectively. Only genes with converged model fits were included in inferential testing.
+
+Benjamini-Hochberg correction was applied after combining genes across computational fitting batches; batch boundaries were not treated as separate multiple-testing families. False-discovery-rate correction was performed separately for each trajectory, statistical test, and global, lineage-specific, or pairwise contrast returned by tradeSeq, with $q<0.05$ considered statistically significant. The association test constituted the primary definition of trajectory-associated gene expression; start-versus-end tests were used for directional interpretation, whereas endpoint and pattern comparisons were considered secondary branch-specific analyses.
+
+Complement-associated expression was subsequently integrated with trajectory and tradeSeq results without refitting trajectories, generalised additive models, or differential-expression models. For descriptive visualisation, metacell expression was normalised to counts per 10,000, log-transformed, and summarised in 10 fixed-width bins along lineage-specific pseudotime using Slingshot lineage weights. Pseudotime was scaled from 0 to 1 within each lineage, with the first and final thirds designated as early and late regions, respectively. As a donor-level sensitivity analysis, late-minus-early expression differences were calculated for donors contributing at least two metacells to each region and were evaluated using two-sided Wilcoxon signed-rank tests when at least five donors had paired observations. Benjamini-Hochberg correction was applied across the prespecified complement genes separately within each trajectory and lineage. These analyses were used to support interpretation of complement transcriptional patterns along inferred cell-state continua; the tradeSeq association test remained the primary test of trajectory-associated gene expression.
+
+
+
+\subsection*{Statistical analysis}
+
+Unless otherwise specified, donor-level analyses treated individual donors as independent biological replicates. Nucleus- and metacell-level analyses were used primarily for representation learning, descriptive visualisation, state characterisation, and sensitivity analyses. Disease-level differential-expression inference was performed using donor-level pseudobulk counts \cite{Zimmerman_Espeland_Langefeld_2021, Squair_Gautier_Kathe_Anderson_James_Hutson_Hudelle_Qaiser_Matson_Barraud}.
+
+For differential-expression analyses, statistical significance was defined as a Benjamini--Hochberg-adjusted $P$ value below 0.05. For pathway-level, trajectory, and other families of multiple statistical tests, false-discovery-rate correction was applied within the hypothesis families defined in the corresponding analysis. Effect sizes and the number of contributing donors were considered alongside adjusted $P$ values.
+
+Failure to reject a null hypothesis was interpreted as absence of statistically detectable evidence under the corresponding analysis and was not interpreted as evidence of equivalence between disease groups.
+
+All analyses were performed using scripted computational workflows in Python and, where required for tradeSeq, R. Random seeds were fixed for stochastic analyses where supported by the corresponding software.
+
+\subsection*{Ethics}
+
+This study was a secondary computational analysis of publicly available, de-identified human transcriptomic data. No new human participants were recruited and no new biological specimens were collected for this analysis. Ethical oversight and informed-consent procedures for generation of the original data were described by the originating studies.
+
+\subsection*{Data and code availability}
+
+The source snRNA-seq dataset is publicly accessible through the CELLxGENE Census under dataset identifier \texttt{7ff0197b-d175-49bf-b4fa-150fe0995d93}. The source kidney atlas collection can be accessed through CELLxGENE at \href{https://cellxgene.cziscience.com/collections/9c9d04c4-8899-417f-bb6f-6107dcadf14f}{https://cellxgene.cziscience.com/collections/9c9d04c4-8899-417f-bb6f-6107dcadf14f}. Author-generated analysis code used for preprocessing, latent representation, complement scoring, validation, donor-level pseudobulk differential expression, metacell construction, DECIPHER modelling, trajectory analysis, and figure generation is available at \href{https://github.com/aumchampaneri/hs-ckd-aki}{https://github.com/aumchampaneri/hs-ckd-aki}. The repository includes a Pixi environment specifying the computational environment used for the analysis.
+
+% Results and Discussion can be combined.
+
+
+\section*{Results}
+
+\subsection*{Cell-resolved mapping identifies heterogeneous complement transcriptional programs across the human kidney}
+
+The final analytic cohort included 1,367,561 nuclei from 223 donors, comprising 141,533 nuclei from 40 donors with acute kidney injury (AKI), 317,266 nuclei from 95 donors with chronic kidney disease (CKD), and 908,762 nuclei from 88 normal/reference donors. Following integration with scVI, the resulting latent representation contained the major epithelial, endothelial, immune, stromal, and other renal cell populations represented in the source atlas (Fig.~\ref{fig:cell_atlas}A--B).
+
+\begin{figure}[!h]
+\caption{\textbf{Cell-resolved organisation of complement-associated transcription in the human kidney.}
+Integrated single-nucleus representation of the analytic cohort. \textbf{A}, scVI-integrated UMAP coloured by broad renal cell class. \textbf{B}, The same representation coloured by clinical group (AKI, CKD, or normal/reference). \textbf{C}, Distribution of complement transcriptional programs across the integrated representation, with nuclei coloured according to their dominant complement program among the classical, lectin, alternative, terminal, receptor, and regulator modules. \textbf{D}, Representative continuous module scores projected onto the integrated representation. UMAP coordinates represent transcriptional similarity and should not be interpreted as physical or spatial relationships within kidney tissue. Complement scores summarise RNA expression of prespecified gene sets and are not direct measurements of biochemical complement activation.}
+\label{fig:cell_atlas}
+\end{figure}
+
+
+We next examined complement-associated transcription across these populations using six non-overlapping gene programs representing classical, lectin, alternative, terminal, receptor, and regulatory components of the complement system. When projected onto the integrated representation, these scores showed considerable heterogeneity across the kidney (Fig.~\ref{fig:cell_atlas}C--D), and different cell populations contributed differently to the individual complement programs. Complement-associated transcription was therefore not distributed uniformly among renal cell types, even before considering disease status.
+
+Sensitivity analyses showed module-dependent agreement between ULM and AUCell scoring, while leave-one-gene-out analyses indicated generally high concordance with the complete-module scores but greater sensitivity to individual genes in several modules (\nameref{S1_Fig}). We considered these scores primarily as descriptive measures of complement-associated transcription rather than direct measures of biochemical complement activation; accordingly, the disease-associated analyses below use donor-level pseudobulk as the primary framework for statistical inference.
+
+
+\subsection*{AKI and CKD show quantitatively distinct complement transcriptional remodelling}
+
+We first examined disease-associated complement transcription at the whole-kidney level using donor-level pseudobulk differential expression. Complement-associated differences were present in both AKI and CKD, although substantially more genes met the prespecified significance threshold in AKI (Fig.~\ref{fig:global_de}A--C). Of 41 evaluable genes in the primary complement set, 25 were differentially expressed in AKI compared with normal/reference kidney, compared with 3 in CKD versus normal/reference kidney, while 16 differed directly between AKI and CKD. Of the 25 significant genes in AKI versus normal/reference kidney, 23 had positive and 2 had negative log$_2$ fold changes; all 16 genes differing between AKI and CKD had positive log$_2$ fold changes.
+
+\begin{figure}[!h]
+\caption{\textbf{Whole-kidney complement differential expression across disease states.}
+Donor-level pseudobulk differential-expression results for CKD versus normal/reference kidney (\textbf{A}), AKI versus normal/reference kidney (\textbf{B}), and AKI versus CKD (\textbf{C}). The x-axis shows the primary log$_2$ fold change and the y-axis shows $-\log_{10}$ Benjamini--Hochberg-adjusted $q$-value. Genes in the prespecified primary complement set are highlighted according to functional category, with other tested genes shown in grey. Among 41 evaluable primary complement genes, 3 were differentially expressed in CKD versus normal/reference kidney, 25 in AKI versus normal/reference kidney, and 16 in AKI versus CKD at $q<0.05$. AKI-associated differences involved several complement functional categories and were predominantly positive, although not uniformly so. Donors, rather than individual nuclei, were treated as biological replicates for differential-expression inference.}
+\label{fig:global_de}
+\end{figure}
+
+
+The CKD comparison was considerably more restricted, with higher \textit{C3} (log$_2$FC=0.87, $q=0.029$) and \textit{MASP1} (log$_2$FC=0.51, $q=0.035$), together with lower \textit{CD55} (log$_2$FC=$-0.44$, $q=0.043$). In AKI, the differences involved genes from several complement functional categories. \textit{C3} showed the largest global increase relative to normal/reference kidney (log$_2$FC=3.16, $q=2.19\times10^{-19}$), alongside higher expression of \textit{CFB}, \textit{C1QA--C}, \textit{ITGAM}, \textit{ITGAX}, \textit{C3AR1}, \textit{CFI}, and \textit{SERPING1}. The changes were not uniformly positive, however, with \textit{C6} (log$_2$FC=$-0.85$, $q=0.0020$) and \textit{CD55} (log$_2$FC=$-0.56$, $q=0.0053$) both lower in AKI. Thus, although AKI showed a substantially broader complement-associated transcriptional signal than CKD, it did not represent a uniform increase across the complement system.
+
+At the donor-module level, the composite complement score differed in all three disease contrasts (AKI versus normal/reference, $q=2.47\times10^{-7}$; CKD versus normal/reference, $q=1.27\times10^{-4}$; AKI versus CKD, $q=0.0072$). All six individual complement modules differed between AKI and normal/reference kidneys. Five of six differed between CKD and normal/reference kidneys, with the regulator module not reaching the prespecified threshold, while the classical, alternative, and regulator modules differed between AKI and CKD (\nameref{S6_Fig}). These donor-level summaries were concordant with the broader gene-level pattern but were used as complementary pathway-level analyses rather than as substitutes for gene-specific differential expression.
+
+
+\subsection*{Complement transcriptional remodelling is strongly cell-type dependent}
+
+The whole-kidney analysis showed substantially broader complement transcriptional remodelling in AKI, but it could not determine whether the same genes were changing across renal populations or whether the global signal arose primarily from particular cell types. We therefore examined the same three disease contrasts across individual renal cell populations (Fig.~\ref{fig:celltype_landscape}). The broader AKI-associated signal extended across several cell types, although the genes contributing to it differed considerably among populations.
+
+\begin{figure}[!h]
+\caption{\textbf{Cell-type-resolved landscape of complement differential expression across disease states.}
+Heatmaps summarise donor-level pseudobulk differential-expression estimates for complement-associated genes across renal cell populations for CKD versus normal/reference kidney (\textbf{A}), AKI versus normal/reference kidney (\textbf{B}), and AKI versus CKD (\textbf{C}). Colour represents the DESeq2 log$_2$ fold change, with red indicating higher and blue indicating lower expression in the first group of each contrast. Asterisks indicate genes meeting the Benjamini--Hochberg-adjusted significance threshold of $q<0.05$. Complement genes are annotated by functional category at left. CFHR1--5 are shown descriptively but were not included in the prespecified primary complement testing set. Complement transcriptional differences varied substantially between cell populations, with broader cell-type-associated changes in AKI than in CKD and with both positive and negative disease-associated differences.}
+\label{fig:celltype_landscape}
+\end{figure}
+
+
+Changes in \textit{C3} were among the more broadly distributed features, whereas many classical, terminal, receptor, and regulatory genes showed more cell-type-restricted patterns. CKD versus normal/reference kidney was comparatively sparse across most populations, while AKI versus normal/reference kidney showed broader differences involving epithelial, endothelial, stromal, and immune compartments. Both positive and negative effects were present across the landscape, and these did not occur consistently in the same populations. Overall, the cell-type-resolved landscape indicated that the whole-kidney AKI signal reflected several distinct cell-type-specific transcriptional responses rather than a uniform increase in the same complement program across the kidney.
+
+
+\subsection*{Cell-type-specific analyses identify distinct epithelial, immune, and stromal complement programs}
+
+The proximal tubule showed one of the broadest cell-type-specific complement patterns in the dataset (Fig.~\ref{fig:pt_de}A--C). Twenty of 38 complement genes with valid tests differed between AKI and normal/reference kidney and 13 of 30 differed between AKI and CKD, while only 2 of 29 differed between CKD and normal/reference kidney. In AKI, \textit{C3} (log$_2$FC=2.88, $q=5.64\times10^{-12}$) and \textit{CFB} (log$_2$FC=1.59, $q=7.31\times10^{-8}$) were increased together with several classical, receptor, and regulatory genes. The response was mixed, however, with lower \textit{C6} (log$_2$FC=$-1.41$, $q=1.48\times10^{-5}$), \textit{C8B} (log$_2$FC=$-1.67$, $q=0.0078$), and \textit{CD55} (log$_2$FC=$-1.09$, $q=2.11\times10^{-4}$). The proximal tubule therefore provided a clear example of broad AKI-associated complement remodelling, but not of coordinated movement of the entire complement gene set.
+
+\begin{figure}[!h]
+\caption{\textbf{Complement differential expression in proximal tubule cells.}
+Targeted donor-level pseudobulk differential-expression analyses of proximal tubule nuclei for CKD versus normal/reference kidney (\textbf{A}), AKI versus normal/reference kidney (\textbf{B}), and AKI versus CKD (\textbf{C}). Axes and complement functional-category colours are defined as in Fig.~\ref{fig:global_de}. Proximal tubule showed broad complement-associated transcriptional remodelling in AKI, including increased \textit{C3} and \textit{CFB} together with changes involving classical, receptor, regulatory, and terminal components. Both positive and negative fold changes were observed rather than uniform induction of the complement gene set.}
+\label{fig:pt_de}
+\end{figure}
+
+Myeloid cells showed a different pattern (Fig.~\ref{fig:immune_de}A--C). Fifteen of 28 evaluable complement genes differed between AKI and normal/reference kidney, with nine having positive and six having negative log$_2$ fold changes. Several production-associated complement genes were higher, including \textit{C3}, \textit{CFB}, \textit{C9}, \textit{C2}, and classical components, while several complement receptors and related genes were lower. The largest decrease was observed for \textit{C5AR1} (log$_2$FC=$-2.13$, $q=2.27\times10^{-16}$), with lower \textit{C5AR2} (log$_2$FC=$-1.15$, $q=1.94\times10^{-6}$), \textit{C3AR1} (log$_2$FC=$-0.91$, $q=4.39\times10^{-6}$), \textit{VSIG4}, \textit{C5}, and \textit{CD55} as well. Six complement genes differed between CKD and normal/reference myeloid cells and four differed directly between AKI and CKD. Production-associated complement genes and genes involved in complement sensing or response therefore did not necessarily change in parallel, resulting in a mixed transcriptional pattern.
+
+\begin{figure}[!h]
+\caption{\textbf{Complement differential expression in myeloid and lymphoid immune populations.}
+Targeted donor-level pseudobulk differential-expression analyses for myeloid (\textbf{A--C}) and lymphoid (\textbf{D--F}) populations. For each population, panels show CKD versus normal/reference kidney, AKI versus normal/reference kidney, and AKI versus CKD. The x-axis shows primary log$_2$ fold change and the y-axis shows $-\log_{10}$ Benjamini--Hochberg-adjusted $q$-value. Primary complement genes are coloured by functional category and other tested genes are shown in grey. Myeloid cells showed broad, mixed-direction remodelling in AKI, with increased expression of several production-associated complement genes occurring alongside decreased expression of several receptor-associated genes, whereas the lymphoid response involved fewer complement genes. Statistical inference was performed at the donor level.}
+\label{fig:immune_de}
+\end{figure}
+
+Lymphoid cells showed a narrower response (Fig.~\ref{fig:immune_de}D--F). Seven of 25 evaluable complement genes differed in AKI versus normal/reference kidney, including higher \textit{C3}, \textit{FCN1}, \textit{CFB}, \textit{C1QA}, \textit{C1QB}, and \textit{C1S}, together with lower \textit{CD55}. In CKD versus normal/reference lymphoid cells, only \textit{CD55} was significantly different. Thus, even within the immune compartment, the extent and composition of complement-associated transcription differed considerably between populations.
+
+Fibroblasts provided a third and somewhat different example of the cell-type-specific response (Fig.~\ref{fig:fibroblast_de}A--C). Thirteen primary complement genes differed between AKI and normal/reference kidney, with 12 having positive and one having a negative log$_2$ fold change. These included higher \textit{C3} (log$_2$FC=2.56, $q=1.24\times10^{-6}$), \textit{C1QC} (log$_2$FC=2.03, $q=3.57\times10^{-5}$), and \textit{CFB} (log$_2$FC=1.26, $q=8.08\times10^{-5}$), as well as higher \textit{C1QA}, \textit{CFI}, and \textit{C9}. Only two primary complement genes differed between CKD and normal/reference fibroblasts. These findings extended the AKI-associated complement transcriptional response beyond epithelial and immune populations into the stromal compartment.
+
+\begin{figure}[!h]
+\caption{\textbf{Complement differential expression in fibroblasts.}
+Targeted donor-level pseudobulk differential-expression analyses of fibroblasts for CKD versus normal/reference kidney (\textbf{A}), AKI versus normal/reference kidney (\textbf{B}), and AKI versus CKD (\textbf{C}). Axes and complement functional-category colours are defined as in Fig.~\ref{fig:global_de}. Fibroblasts showed broad AKI-associated transcriptional remodelling involving several complement functional categories, while substantially fewer primary complement genes differed in CKD versus normal/reference kidney.}
+\label{fig:fibroblast_de}
+\end{figure}
+
+The broader cell-type analysis also identified complement-associated differences in endothelial and additional tubular populations (\nameref{S2_Fig}--\nameref{S5_Fig}). Endothelial cells had six significant primary complement genes in AKI versus normal/reference kidney, including higher \textit{C3}, \textit{CFI}, \textit{C1R}, \textit{ITGAX}, and \textit{CFB}, together with lower \textit{CD46}. The thick ascending limb showed a broader pattern, with 11 of 37 evaluable complement genes differing in AKI versus normal/reference kidney and eight of 27 differing between AKI and CKD, while only one of 32 differed between CKD and normal/reference kidney. Complement-associated differences were also observed in distal convoluted tubule, connecting tubule, principal-cell, and intercalated-cell populations, although the genes involved and their direction of change varied among populations.
+
+Not all renal populations showed this pattern. In particular, we did not detect a statistically significant primary complement-gene difference in podocytes in any of the three disease comparisons, with 0 of 11 genes with valid tests differing between AKI and normal/reference podocytes, 0 of 33 between CKD and normal/reference podocytes, and 0 of 31 between AKI and CKD (\nameref{S4_Fig}). These null results should not be interpreted as evidence of equivalence between groups, particularly because the number of evaluable genes and statistical precision differed among contrasts; however, we did not find donor-level evidence for the broad disease-associated complement remodelling in podocytes that was observed in several other renal populations.
+
+
+\subsection*{AKI and CKD share a broader injury-associated transcriptional component}
+
+Although complement-associated transcriptional changes were considerably broader in AKI than in CKD, many complement genes nevertheless changed in the same direction in the two disease comparisons (Fig.~\ref{fig:disease_concordance}). Of the 41 primary complement genes evaluable in both contrasts, 27 (65.9\%) changed in the same direction, with 18 having positive and 9 having negative log$_2$ fold changes in both AKI and CKD relative to normal/reference kidney. The magnitude of these changes was often quite different, and only two primary complement genes were statistically significant in both comparisons: \textit{C3}, which was higher in both AKI and CKD, and \textit{CD55}, which was lower in both.
+
+\begin{figure}[!h]
+\caption{\textbf{Concordance of complement-associated transcriptional changes in AKI and CKD.}
+Comparison of gene-level log$_2$ fold changes from the CKD versus normal/reference and AKI versus normal/reference donor-level pseudobulk analyses. Grey points represent the genome-wide background and complement-associated genes are highlighted according to functional category. Of 41 primary complement genes evaluable in both contrasts, 27 (65.9\%) changed in the same direction, including 18 with positive and 9 with negative log$_2$ fold changes in both comparisons. Across all 33,592 genes evaluated in both contrasts, effect sizes were moderately correlated (Spearman $\rho=0.461$; Pearson $r=0.455$). Of 1,380 genes statistically significant in both disease comparisons, 1,354 (98.1\%) changed in the same direction. CFHR1--5 are displayed descriptively and were not included in the prespecified primary complement set.}
+\label{fig:disease_concordance}
+\end{figure}
+
+This directional similarity was also present across the broader transcriptome. Across 33,592 genes evaluated in both AKI-versus-normal and CKD-versus-normal comparisons, effect sizes were moderately correlated (Spearman $\rho=0.461$; Pearson $r=0.455$). There were 1,380 genes reaching statistical significance in both comparisons, and 1,354 of these (98.1\%) changed in the same direction. Thus, while AKI and CKD differed substantially in the magnitude and breadth of complement-associated transcription, they also shared a broader directionally concordant component of the injury-associated transcriptome. These data are cross-sectional and were obtained from different donors, and this relationship should therefore be interpreted as similarity between clinical groups rather than evidence that an AKI transcriptional state progresses into a CKD state.
+
+
+\subsection*{Disease groups occupy different positions across cross-sectional renal cell-state trajectories}
+
+The pseudobulk analyses established where disease-associated complement transcription differed, but they did not address how these patterns related to transcriptional state within individual renal populations. We therefore examined whether AKI and CKD were associated with differences in the distribution of cells across transcriptional continua within major renal compartments. Five trajectories were prespecified before complement-specific testing: a proximal tubular trajectory, two fibroblast trajectories representing contractile and outer-medullary states, and podocyte--PEC and endothelial--mesangial trajectories within the glomerular compartment (Fig.~\ref{fig:trajectory_disease}). Because the data were collected cross-sectionally from different donors, pseudotime is used here as an ordering of transcriptional states rather than a measure of elapsed biological time or disease progression.
+
+\begin{figure}[!h]
+\caption{\textbf{Cross-sectional renal trajectories and disease-group associations.}
+\textbf{A}, Architecture of the five prespecified frozen renal trajectories: proximal tubule, contractile fibroblast, outer-medullary fibroblast, podocyte--parietal epithelial cell (PEC), and endothelial--mesangial. Trajectories are projected onto UMAP-style state-space layouts for visualisation only. The black star indicates the inferred root/early end of the highlighted lineage, the open circle indicates its late end, and arrows show increasing pseudotime. Other lineage paths and metacells are shown in grey for context. \textbf{B}, The same frozen trajectory layouts coloured descriptively by the dominant disease label of each metacell (CKD, AKI, control/other, or unknown). These colours illustrate the distribution of disease-labelled metacells and are not themselves donor-level tests of enrichment or prevalence. \textbf{C}, Selected assay-adjusted donor-level disease associations for lineage occupancy and weighted mean pseudotime position. Columns show AKI and CKD coefficients relative to the normal/reference group for each endpoint. Positive coefficients indicate greater lineage occupancy or a higher mean pseudotime position, whereas negative coefficients indicate lower occupancy or position. Coloured outlined cells denote Benjamini--Hochberg-adjusted $q<0.05$; grey cells indicate $q\geq0.05$ or an unavailable comparison. Coefficients were estimated at the donor level with assay adjustment. Occupancy and pseudotime position represent distinct endpoints and should not be interpreted as longitudinal movement of individual cells.}
+\label{fig:trajectory_disease}
+\end{figure}
+
+The most extensive disease-associated differences were observed across PT trajectories. AKI was associated with substantially lower occupancy of PT Lineages 6 and 7 relative to normal/reference kidneys (assay-adjusted coefficients $-0.301$ and $-0.321$; $q=1.55\times10^{-12}$ and $4.80\times10^{-12}$, respectively). At the same time, donors with AKI occupied higher mean pseudotime positions in several other PT lineages, most notably Lineages 5, 8 and 10, with coefficients of $+0.265$, $+0.330$ and $+0.315$, respectively (all $q<4\times10^{-9}$). CKD showed smaller shifts in several of the same continua, including lower Lineage 6 occupancy and higher mean pseudotime position in Lineages 5, 8 and 10.
+
+Fibroblast trajectories showed a similarly structured redistribution of disease groups. In the contractile fibroblast trajectory, Lineage 1 occupancy was higher in both AKI ($+0.396$, $q=9.91\times10^{-5}$) and CKD ($+0.263$, $q=0.0028$), and mean pseudotime position within the lineage was also higher in AKI ($+0.271$, $q=3.62\times10^{-11}$) and CKD ($+0.202$, $q=1.28\times10^{-9}$). The outer-medullary fibroblast trajectory showed a different pattern, with markedly lower Lineage 2 occupancy in CKD ($-0.653$, $q=3.07\times10^{-10}$) and AKI ($-0.627$, $q=1.28\times10^{-5}$), while Lineage 1 mean position was higher in both disease groups.
+
+Disease-associated differences in the glomerular trajectories were more selective. CKD was associated with lower occupancy of endothelial--mesangial Lineage 2 ($-0.387$, $q=6.75\times10^{-5}$) and a higher mean position along Lineage 3 ($+0.151$, $q=0.0099$). Within the podocyte--PEC trajectory, CKD was associated with lower Lineage 1 occupancy ($-0.194$, $q=0.020$) and higher Lineage 2 occupancy ($+0.169$, $q=0.018$), while AKI was also associated with lower Lineage 1 occupancy ($-0.219$, $q=0.032$).
+
+These analyses indicate that AKI and CKD are associated with differences in both the representation of several inferred renal cell states and, for some lineages, the transcriptional position of donors within those continua. Occupancy and pseudotime position are distinct endpoints, however, and a disease group can be less represented in a lineage while donors represented within that lineage occupy a different region of the transcriptional continuum. Neither result implies that individual cells move through these states during AKI or subsequently progress into CKD.
+
+Sensitivity analyses showed that inferred ordering was well preserved for many lineages under alternative rooting, diffusion pseudotime, and repeated donor subsampling, while several lineages showed greater dependence on the latent representation or other analytical choices (\nameref{S7_Fig}). The sensitivity analyses therefore supported many of the primary lineage orderings but also identified specific branches for which pseudotime should be interpreted more cautiously.
+
+
+\subsection*{Complement transcription is extensively remodelled across renal cell-state trajectories}
+
+We then tested whether complement-associated gene expression varied across the five prespecified trajectories using tradeSeq, with the trajectory-wide \textit{associationTest} as the primary gene-level test. Directional start-versus-end tests and descriptive early-to-late expression differences were used to interpret significant associations, while donor-paired early-versus-late analyses provided an additional sensitivity analysis where sufficient donor coverage was available (Fig.~\ref{fig:trajectory_complement}). Complement transcription varied across all five trajectories, although the number of associated genes, direction of change, and extent of donor-level support differed substantially between lineages.
+
+\begin{figure}[!h]
+\caption{\textbf{Complement transcriptional remodelling across cross-sectional renal trajectories.}
+\textbf{A}, Complement transcriptional fingerprints across the frozen renal lineages. Tiles summarise the six prespecified primary complement modules (classical, lectin, alternative, terminal, receptor, and regulator); CFHR1--5 were excluded from this inferential summary. Tile colour represents the median descriptive late-minus-early expression change among module genes with both significant trajectory association and start-versus-end support, with grey indicating no jointly supported genes. Open circles denote modules containing at least one gene supported by the donor-paired early/late sensitivity analysis, and black squares denote modules in which at least 50\% of genes had joint trajectory-association and start-versus-end FDR support. \textbf{B--F}, Representative complement-gene expression profiles across scaled pseudotime for \textit{C3} in proximal tubule Lineage 3 (\textbf{B}), \textit{C1S} in proximal tubule Lineage 2 (\textbf{C}), \textit{CR1} in podocyte--PEC Lineage 1 (\textbf{D}), \textit{CFH} in endothelial--mesangial Lineage 3 (\textbf{E}), and \textit{C1R} in outer-medullary fibroblast Lineage 1 (\textbf{F}). The black curve shows all available metacells, with CKD, AKI and control/other curves overlaid descriptively; shaded ribbons show 95\% intervals across donor-level binned summaries where sufficient donor coverage was available. Statistical annotations report the primary tradeSeq trajectory-association test, the directional start-versus-end test, the descriptive late-minus-early expression difference ($\Delta$), and donor-paired support where available. Disease-specific curves are descriptive and were not included as covariates in the primary tradeSeq trajectory models. Pseudotime represents cross-sectional transcriptional ordering rather than elapsed biological time and does not establish longitudinal cell-state transitions or AKI-to-CKD progression.}
+\label{fig:trajectory_complement}
+\end{figure}
+
+The broadest trajectory-associated complement remodelling was observed in PT, with as many as 28 primary complement genes associated with pseudotime in a single lineage and substantial donor-paired support across several PT lineages. The direction of these changes was not uniform. In PT Lineage 3, \textit{C3} was strongly associated with pseudotime and increased from early to late states by 0.51 log1p counts per 10,000; this directional change was also supported in the donor-paired analysis ($q=0.012$). In contrast, \textit{C1S} decreased across PT Lineage 2 by 0.08 log1p counts per 10,000 and was likewise supported by the donor-paired sensitivity analysis ($q=0.0032$). Even within PT, therefore, complement-associated genes followed different transcriptional patterns rather than changing along a single shared axis.
+
+More selective changes were observed outside PT. In the podocyte--PEC trajectory, \textit{CR1} was strongly associated with pseudotime in Lineage 1 and decreased markedly from early to late states ($\Delta=-1.57$ log1p counts per 10,000). The donor-paired test was directionally similar but did not remain significant after correction ($q=0.067$). This state-dependent expression does not contradict the earlier podocyte pseudobulk null because the two analyses address different questions: the pseudobulk analysis tests average disease-associated expression within podocytes, whereas the trajectory analysis tests variation across a broader podocyte--PEC transcriptional continuum.
+
+Within endothelial--mesangial Lineage 3, the complement regulator \textit{CFH} was associated with pseudotime ($q=2.95\times10^{-8}$) and increased from early to late states by 0.74 log1p counts per 10,000, with a significant start-versus-end test ($q=1.17\times10^{-10}$). In outer-medullary fibroblast Lineage 1, \textit{C1R} showed a similarly strong trajectory association and increased by 1.00 log1p counts per 10,000 from early to late states, with a significant directional start-versus-end test ($q=4.60\times10^{-9}$). Donor-paired early/late testing was not available for these two examples because the required donor coverage was not met.
+
+Taken together, the trajectory analyses show that complement-associated transcription is structured across renal cell-state continua, but the magnitude and direction of this remodelling vary considerably between genes and lineages. PT showed the broadest combination of trajectory association and donor-level early/late support, whereas fibroblast and glomerular trajectories contained more selective state-associated patterns. The AKI, CKD, and control/other curves shown in Fig.~\ref{fig:trajectory_complement} are descriptive overlays on the frozen trajectories; the primary tradeSeq trajectory tests were not fitted with disease as a covariate. Because pseudotime was inferred from cross-sectional nuclei obtained from different donors, these results describe relationships among transcriptional states and should not be interpreted as longitudinal cell-state transitions, temporal complement activation, or progression from AKI to CKD. Additional representative complement-gene maps and pseudotime profiles are shown in \nameref{S8_Fig} and \nameref{S9_Fig}.
+
+\section*{Discussion}
+
+In this study, we used a large human kidney single-nucleus transcriptomic dataset to examine complement-associated transcription across normal/reference, AKI, and CKD kidneys at both whole-kidney and cell-type-specific levels. Several findings emerged consistently across the analyses. First, complement-associated transcription was highly heterogeneous across renal cell populations rather than being distributed as a uniform kidney-wide program. Second, disease-associated remodelling was substantially broader in AKI than in CKD, both globally and within several individual renal populations. Third, the direction and magnitude of these changes varied considerably between cell types and between functional components of the complement system. Finally, complement-associated expression also varied across cross-sectional renal cell-state continua, particularly within proximal tubular states, although these trajectory-associated patterns were not equivalent to longitudinal disease progression.
+
+The breadth of the AKI-associated signal was one of the clearest findings. At the whole-kidney level, 25 of 41 evaluable primary complement genes differed between AKI and normal/reference kidney, compared with only three in the CKD comparison, and 16 differed directly between AKI and CKD. This difference in breadth was also evident within several renal populations, including proximal tubular, myeloid, fibroblast, endothelial, and thick ascending limb compartments. Importantly, however, the AKI-associated pattern was not a simple increase in all complement-related genes. Increased expression of genes such as \textit{C3} and \textit{CFB} occurred alongside lower expression of other components, including selected terminal, receptor, and regulatory genes. The myeloid compartment provided a particularly clear example, where higher expression of several production-associated complement genes occurred together with reduced expression of \textit{C5AR1}, \textit{C5AR2}, \textit{C3AR1}, and other receptor-associated genes. These findings support a model of complement transcriptional remodelling in which different parts of the system may be regulated independently rather than moving in parallel.
+
+The proximal tubule showed one of the broadest disease-associated complement patterns. This is consistent with the broader susceptibility of tubular epithelial cells to inflammatory and metabolic stress during acute renal injury, and with prior work implicating locally expressed complement components in kidney injury \cite{willowsRoleComplementKidney2020a,thurmanComplementKidneyOverview2020a}. In the present data, proximal tubular cells showed increased expression of several complement-associated genes in AKI, including \textit{C3} and \textit{CFB}, but also reductions in genes such as \textit{C6}, \textit{C8B}, and \textit{CD55}. The trajectory analyses further indicated that complement-associated expression varied substantially across proximal tubular transcriptional states. Some genes increased across particular continua whereas others decreased, and several of these patterns were supported by donor-paired early-versus-late analyses. Together, these results suggest that complement transcription within the proximal tubule is strongly state-dependent and cannot be represented adequately by a single aggregate pathway score.
+
+Immune and stromal populations also contributed substantially to the observed disease-associated patterns. Myeloid cells showed broad but mixed-direction complement remodelling, while fibroblasts showed predominantly higher expression of several complement-associated genes in AKI. Endothelial populations showed a smaller but still detectable disease-associated signal. These observations are relevant because complement biology within kidney injury is unlikely to be restricted to a single cellular source or responding population. Instead, the transcriptional landscape observed here involved epithelial, immune, stromal, and vascular compartments, with different components of the complement system represented in each. This multicellular distribution is compatible with the broader concept that complement can be produced and regulated locally within tissues, although the present RNA measurements cannot determine whether these transcripts resulted in extracellular complement activation, intracellular complement signalling, or functional protein production \cite{westComplosomeIntracellularComplement2023}.
+
+An important counterpoint was provided by the podocyte analysis. We did not detect statistically significant primary complement-gene differences in podocytes in any of the three donor-level disease comparisons. This negative result is informative because it demonstrates that broad complement-associated transcriptional remodelling was not a universal feature of all renal cell populations. At the same time, the absence of statistically detectable disease-associated differential expression should not be interpreted as evidence that podocyte complement transcription was identical between groups. The number of genes with valid tests differed among contrasts and the power of the targeted analyses depended on donor representation and expression levels. The later podocyte--PEC trajectory analysis also addressed a different question, showing that selected complement genes such as \textit{CR1} varied across a broader podocyte--PEC transcriptional continuum even though donor-level disease comparisons within podocytes were null. These findings are therefore complementary rather than contradictory.
+
+Although AKI showed broader complement-associated changes than CKD, the two disease states were not transcriptionally unrelated. More than half of the evaluable primary complement genes changed in the same direction in AKI and CKD relative to normal/reference kidney, and genome-wide effect sizes showed moderate concordance. Among genes significant in both disease comparisons, the direction of effect was highly consistent. This shared component may reflect transcriptional responses common to injured kidney tissue, while the larger magnitude and broader range of changes in AKI indicate that the complement-associated response was not equivalent between the two clinical groups. Because AKI and CKD samples were obtained cross-sectionally from different donors, however, these similarities cannot establish that an AKI-associated transcriptional state develops into the CKD state. They are better interpreted as partially overlapping disease-associated transcriptional patterns.
+
+The trajectory analyses added a second level of resolution by examining how disease representation and complement expression varied within transcriptional continua. AKI and CKD were associated with differences in both lineage occupancy and mean pseudotime position across several proximal tubular, fibroblast, and glomerular trajectories. These two measures capture distinct properties: occupancy reflects how strongly a donor is represented within an inferred lineage, whereas conditional pseudotime position describes where represented donor metacells lie along that lineage. The coexistence of occupancy and position effects in some trajectories therefore should not be interpreted as evidence that cells physically move from one disease-defined state to another. Similarly, complement genes showed extensive but lineage-specific pseudotime associations, with the broadest donor-supported patterns in proximal tubular trajectories and more selective effects in fibroblast and glomerular continua. These results support state-dependent organisation of complement-associated transcription, but the inferred trajectories remain cross-sectional relationships among transcriptional states rather than direct measurements of temporal cellular transitions.
+
+Several aspects of the study strengthen these findings. The analysis included more than 1.3 million nuclei from 223 donors and incorporated a wide range of epithelial, immune, endothelial, stromal, and glomerular populations. Disease-level inference was performed using donor-level pseudobulk profiles rather than treating individual nuclei as independent biological replicates. Complement scoring used prespecified, non-overlapping functional gene sets and was evaluated using an alternative scoring framework and leave-one-gene-out sensitivity analyses. The trajectory analyses were also defined independently of complement expression and disease association, with biologically specified roots, frozen trajectory solutions, alternative-root and representation sensitivity analyses, and donor-level disease summaries. These design choices reduce several common sources of pseudoreplication and post hoc trajectory interpretation in single-cell studies.
+
+The study also has important limitations. First, the analysis is cross-sectional and based on independent donors, so temporal relationships between AKI, recovery, and CKD cannot be inferred. Second, disease classifications and clinical annotations were inherited from the harmonised source atlas and were not reconstructed independently from primary clinical records. Clinical metadata availability also differed among contributing cohorts, which limited the variables that could be included consistently in adjusted models. Third, the study measures RNA expression rather than complement protein abundance, cleavage products, deposition, receptor signalling, or pathway flux. Increased or decreased transcript abundance therefore should not be interpreted as direct evidence of biochemical complement activation or inhibition. Fourth, the source atlas integrated samples generated using multiple assays and tissue-collection procedures. Although technical covariates were evaluated and incorporated where estimable, residual technical or cohort-related variation may remain. Finally, cell-state trajectories were inferred computationally from transcriptional similarity; they provide a useful framework for organising heterogeneous states but do not demonstrate lineage fate, temporal progression, or cellular transition in vivo.
+
+These limitations also define several directions for future work. Longitudinal or serially sampled human studies would be required to determine whether the cross-sectional transcriptional states identified here correspond to temporal changes during injury and recovery. Integration of transcriptomic data with protein-level complement measurements, tissue deposition, cleavage products, functional assays, and spatially resolved measurements could determine which transcriptional programs correspond to biochemical complement activity in situ. Such studies would also be needed before using the present transcriptional patterns to infer therapeutic responsiveness. The current analysis therefore provides a cell-resolved transcriptional framework for prioritizing specific populations, genes, and cell states for further mechanistic investigation rather than a direct measure of complement pathway activity.
+
+\section*{Conclusion}
+
+Human AKI and CKD are associated with distinct but partially overlapping patterns of complement transcriptional remodelling across the kidney. These changes are strongly cell-type dependent, with broad disease-associated differences in selected tubular, immune, stromal, and endothelial populations, while other populations, including podocytes, showed little detectable donor-level differential expression. Complement-associated transcription also varied across cross-sectional renal cell-state continua, particularly within the proximal tubule, but these relationships should not be interpreted as longitudinal cellular transitions or AKI-to-CKD progression. Together, these findings provide a cell-resolved framework for understanding complement-associated transcription in human kidney injury and identify specific renal populations and cell states for future mechanistic and protein-level investigation.
+
+\section*{Acknowledgments}
+
+
+\nolinenumbers
+
+\bibliography{plos_bibtex}
+
+\section*{Supporting information}
+
+% Include only the SI item label in the paragraph heading. Use the \nameref{label} command to cite SI items in the text.
+
+\paragraph*{S1 Fig.}
+\label{S1_Fig}
+\textbf{Validation and sensitivity analysis of complement transcriptional module scores.}
+\textbf{A}, Agreement between univariate linear model (ULM) and AUCell-derived scores for the six prespecified complement transcriptional modules, quantified using Spearman correlation on the common subsample of nuclei used for AUCell analysis. Agreement varied substantially among modules, ranging from lower concordance for the lectin module to strong concordance for the regulator module. 
+\textbf{B}, Leave-one-gene-out sensitivity analysis of the ULM module scores. Each represented gene was removed sequentially from its corresponding module and the resulting reduced-module score was compared with the complete-module score using Spearman correlation. Open points show individual gene-removal results, horizontal ranges summarise the distribution within each module, and filled circles indicate the module median. Labels identify the gene whose removal produced the lowest concordance within each module. The dashed vertical line marks the prespecified sensitivity flag of $\rho=0.90$. Most individual gene-removal comparisons retained high concordance with the complete-module score, although several modules showed greater dependence on particular genes. These analyses were used as sensitivity assessments of the scoring framework and were not interpreted as independent biological validation.
+
+\paragraph*{S2 Fig.}
+\label{S2_Fig}
+\textbf{Additional complement differential-expression analyses in whole-kidney, connecting tubule, and distal convoluted tubule samples.}
+Donor-level pseudobulk differential-expression results are shown for the cohort-wide analysis (\textbf{A--C}), connecting tubule (\textbf{D--F}), and distal convoluted tubule (\textbf{G--I}). Within each row, panels show CKD versus normal/reference kidney, AKI versus normal/reference kidney, and AKI versus CKD, respectively. The x-axis shows the primary log$_2$ fold-change estimate and the y-axis shows the $-\log_{10}$ Benjamini--Hochberg-adjusted $q$-value. Complement-associated genes are highlighted according to functional category and other tested genes are shown in grey. Vertical reference lines denote log$_2$ fold-change thresholds used for visual interpretation, and the horizontal dashed line indicates the $q=0.05$ threshold. Panel annotations report fitted donor and nucleus counts together with the number of significant genes among the broader complement-associated genes displayed in the volcano plot that passed the expression filter; this display set includes \textit{CFHR1--CFHR5} descriptively. These counts therefore differ from the primary inferential complement-gene denominators reported in the main text, which exclude \textit{CFHR1--CFHR5} and are restricted to primary complement genes with valid differential-expression tests.
+
+\paragraph*{S3 Fig.}
+\label{S3_Fig}
+\textbf{Complement differential expression in descending thin limb, endothelial, and intercalated-cell populations.}
+Targeted donor-level pseudobulk differential-expression results are shown for descending thin limb (\textbf{A--C}), endothelial cells (\textbf{D--F}), and intercalated cells (\textbf{G--I}). Within each row, panels show CKD versus normal/reference kidney, AKI versus normal/reference kidney, and AKI versus CKD, respectively. The x-axis shows the primary log$_2$ fold-change estimate and the y-axis shows the $-\log_{10}$ Benjamini--Hochberg-adjusted $q$-value. Complement-associated genes are highlighted according to functional category and other tested genes are shown in grey. Vertical reference lines denote log$_2$ fold-change thresholds used for visual interpretation, and the horizontal dashed line indicates the $q=0.05$ threshold. Panel annotations report fitted donor and nucleus counts together with the number of significant genes among the broader complement-associated genes displayed in the volcano plot that passed the expression filter; this display set includes \textit{CFHR1--CFHR5} descriptively. These counts therefore differ from the primary inferential complement-gene denominators reported in the main text, which exclude \textit{CFHR1--CFHR5} and are restricted to primary complement genes with valid differential-expression tests.
+
+\paragraph*{S4 Fig.}
+\label{S4_Fig}
+\textbf{Complement differential expression in collecting-duct principal cells, parietal epithelial cells, and podocytes.}
+Targeted donor-level pseudobulk differential-expression results are shown for collecting-duct principal cells (\textbf{A--C}), parietal epithelial cells (\textbf{D--F}), and podocytes (\textbf{G--I}). Within each row, panels show CKD versus normal/reference kidney, AKI versus normal/reference kidney, and AKI versus CKD, respectively. The x-axis shows the primary log$_2$ fold-change estimate and the y-axis shows the $-\log_{10}$ Benjamini--Hochberg-adjusted $q$-value. Complement-associated genes are highlighted according to functional category and other tested genes are shown in grey. Vertical reference lines denote log$_2$ fold-change thresholds used for visual interpretation, and the horizontal dashed line indicates the $q=0.05$ threshold. Panel annotations report fitted donor and nucleus counts together with the number of significant genes among the broader complement-associated genes displayed in the volcano plot that passed the expression filter; this display set includes \textit{CFHR1--CFHR5} descriptively. These counts therefore differ from the primary inferential complement-gene denominators reported in the main text, which exclude \textit{CFHR1--CFHR5} and are restricted to primary complement genes with valid differential-expression tests. No primary complement genes met the prespecified significance threshold in podocytes in any of the three disease comparisons; these null results are not interpreted as evidence of equivalence between groups.
+
+\paragraph*{S5 Fig.}
+\label{S5_Fig}
+\textbf{Complement differential expression in thick ascending limb and vascular smooth muscle/pericyte populations.}
+Targeted donor-level pseudobulk differential-expression results are shown for thick ascending limb (\textbf{A--C}) and vascular smooth muscle/pericyte populations (\textbf{D--F}). Within each row, panels show CKD versus normal/reference kidney, AKI versus normal/reference kidney, and AKI versus CKD, respectively. The x-axis shows the primary log$_2$ fold-change estimate and the y-axis shows the $-\log_{10}$ Benjamini--Hochberg-adjusted $q$-value. Complement-associated genes are highlighted according to functional category and other tested genes are shown in grey. Vertical reference lines denote log$_2$ fold-change thresholds used for visual interpretation, and the horizontal dashed line indicates the $q=0.05$ threshold. Panel annotations report fitted donor and nucleus counts together with the number of significant genes among the broader complement-associated genes displayed in the volcano plot that passed the expression filter; this display set includes \textit{CFHR1--CFHR5} descriptively. These counts therefore differ from the primary inferential complement-gene denominators reported in the main text, which exclude \textit{CFHR1--CFHR5} and are restricted to primary complement genes with valid differential-expression tests.
+
+\paragraph*{S6 Fig.}
+\label{S6_Fig}
+\textbf{Donor-level complement transcriptional module differences across disease groups.}
+Donor-level complement module scores were calculated from pseudobulk expression profiles as the mean standardised expression of genes in each of the six prespecified complement modules together with a composite complement score. Columns show CKD versus normal/reference kidney, AKI versus normal/reference kidney, and AKI versus CKD. Dot colour represents the median score difference between the first and second group in each contrast, with positive values indicating higher scores in the first group. Dot size reflects the strength of statistical evidence, and black outlines denote Benjamini--Hochberg-adjusted $q<0.05$. Pairwise group differences were evaluated using two-sided Mann--Whitney $U$ tests, with multiple-testing correction performed separately within each disease contrast across the seven prespecified complement-level hypotheses.
+
+\paragraph*{S7 Fig.}
+\label{S7_Fig}
+\textbf{Robustness of cross-sectional renal cell-state trajectories to alternative analytical choices.}
+\textbf{A}, Lineage-level agreement between the primary Slingshot pseudotime and trajectories inferred using prespecified alternative biological roots. Horizontal position indicates Spearman correlation with the primary lineage ordering, while point size reflects overlap between the corresponding primary and sensitivity trajectory paths as measured by the path Jaccard index. \textbf{B}, Lineage-level pseudotime concordance after reconstructing trajectories using the alternative DECIPHER $z$ latent representation or the scVI latent representation. Tile colour and annotated values indicate Spearman correlation with matched primary lineages inferred from the primary DECIPHER $v$ representation; blank cells indicate lineages without a matched sensitivity counterpart. \textbf{C}, Agreement between primary Slingshot pseudotime and diffusion pseudotime (DPT) within each frozen lineage. \textbf{D}, Stability under repeated donor subsampling. Points show the median Spearman correlation with the primary pseudotime across successful subsampling runs, horizontal intervals show the 5th--95th percentile range, and point size indicates the fraction of successful runs in which the corresponding primary lineage was recovered. One hundred donor-subsampling iterations were attempted per trajectory; three proximal-tubule iterations failed at the Slingshot stage and were excluded from lineage-level summaries. Sensitivity varied among lineages and analytical choices; these analyses were used to identify trajectories whose ordering was more or less dependent on rooting, representation, ordering method, or donor composition rather than to establish a single threshold for trajectory validity.
+
+\paragraph*{S8 Fig.}
+\label{S8_Fig}
+\textbf{Representative lineage structure across the frozen renal cell-state trajectories.}
+Selected Slingshot lineages are shown for proximal tubular, endothelial--mesangial,
+outer-medullary fibroblast, contractile fibroblast, and podocyte--parietal epithelial
+cell trajectories. Dots represent donor-preserving metacells and are coloured by
+scaled lineage-specific pseudotime; point opacity reflects Slingshot lineage weight.
+Stars indicate the inferred biological root or early end, open circles indicate the
+late lineage end, and arrows indicate the direction from early to late pseudotime.
+Shown lineages include proximal tubule L2 and L3, endothelial--mesangial L1 and L3,
+outer-medullary fibroblast L1, contractile fibroblast L3, and podocyte--PEC L1.
+Trajectory orientation was fixed by prespecified biological roots and was not selected
+or reoriented according to disease status or complement expression.
+
+\paragraph*{S9 Fig.}
+\label{S9_Fig}
+\textbf{Extended examples of complement-associated transcription across renal cell-state trajectories.}
+Observed complement-gene expression is shown across selected frozen Slingshot
+lineages. Metacells are coloured by log-transformed expression
+[$\log(1+\mathrm{CP10K})$], with the fitted trajectory overlaid. Stars indicate the
+prespecified root or early end, open circles indicate the late lineage end, and arrows
+indicate the direction of increasing pseudotime. Panels show \textit{C3} and
+\textit{C1S} in proximal tubule, \textit{C1R} and \textit{SERPING1} in
+outer-medullary fibroblasts, \textit{C5} and \textit{CFH} in the
+endothelial--mesangial trajectory, \textit{CR1} in the podocyte--PEC trajectory,
+and \textit{CD55} in contractile fibroblasts. Panel annotations report the
+Benjamini--Hochberg-adjusted tradeSeq association-test and start-versus-end
+$q$ values, together with the descriptive late-minus-early expression difference.
+Where adequate paired donor representation was available, the donor-level
+early-versus-late sensitivity result is also indicated. These plots describe
+transcriptional variation along inferred cross-sectional cell-state continua and do
+not establish temporal progression or biochemical complement activation.
+
+\paragraph*{S1 Table.}
+\label{S1_Table}
+\textbf{Summary of single-nucleus-omic experiments and available source metadata.}
+Experiment-level metadata for the source kidney atlas, including cohort and assay information, specimen and disease annotations, anatomical region, available demographic and clinical variables, tissue-collection details, source accession information, and sequencing/QC metrics. Blank fields indicate metadata that were unavailable in the source table. The table reflects source-level experiment metadata; disease groups and donor-level statistical models used in the present analysis were derived from the harmonised annotations and analysis-specific eligibility criteria described in the Methods.
+
+\end{document}
