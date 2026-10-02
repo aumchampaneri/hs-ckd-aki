@@ -44,3 +44,4 @@ reference/*.xlsx
 # Miscellaneous folders/files
 manuscript/figures/v1 figures/
 .ipynb_checkpoints/
+supplementary_tables/S5_Table.xlsx
