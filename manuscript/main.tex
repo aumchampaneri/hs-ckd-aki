@@ -361,7 +361,7 @@ Differential expression was performed using PyDESeq2 \cite{muzellec2023pydeseq2}
 
 Both maximum-likelihood log$_2$ fold-change estimates and PyDESeq2-shrunken estimates were retained in the analysis outputs. Shrinkage was performed using the \texttt{DeseqStats.lfc\_shrink} implementation.
 
-The CKD-versus-normal, AKI-versus-normal, and AKI-versus-CKD global analyses tested 33,801, 33,603, and 32,781 genes, respectively, after expression filtering. Statistical significance was defined as a Benjamini-Hochberg-adjusted $P$ value ($q$ value) $<0.05$. Nonsignificant tested complement genes were retained in complement-specific result tables so that the denominator of each complement-gene comparison reflected all complement genes that were actually tested rather than only significant genes.
+The CKD-versus-normal, AKI-versus-normal, and AKI-versus-CKD global analyses tested 33,801, 33,603, and 32,781 genes, respectively, after expression filtering. Statistical significance was defined as a Benjamini--Hochberg false-discovery-rate $q$ value $<0.05$. Nonsignificant tested complement genes were retained in complement-specific result tables so that the denominator of each complement-gene comparison reflected all complement genes that were actually tested rather than only significant genes.
 
 \subsection*{Cross-disease transcriptional concordance}
 
@@ -433,7 +433,7 @@ Complement-associated expression was subsequently integrated with trajectory and
 
 Unless otherwise specified, donor-level analyses treated individual donors as independent biological replicates. Nucleus- and metacell-level analyses were used primarily for representation learning, descriptive visualisation, state characterisation, and sensitivity analyses. Disease-level differential-expression inference was performed using donor-level pseudobulk counts \cite{Zimmerman_Espeland_Langefeld_2021, Squair_Gautier_Kathe_Anderson_James_Hutson_Hudelle_Qaiser_Matson_Barraud}.
 
-For differential-expression analyses, statistical significance was defined as a Benjamini--Hochberg-adjusted $P$ value below 0.05. For pathway-level, trajectory, and other families of multiple statistical tests, false-discovery-rate correction was applied within the hypothesis families defined in the corresponding analysis. Effect sizes and the number of contributing donors were considered alongside adjusted $P$ values.
+For differential-expression analyses, statistical significance was defined as a Benjamini--Hochberg false-discovery-rate $q$ value below 0.05. For pathway-level, trajectory, and other families of multiple statistical tests, false-discovery-rate correction was applied within the hypothesis families defined in the corresponding analysis. Effect sizes and the number of contributing donors were considered alongside adjusted $q$ values.
 
 Failure to reject a null hypothesis was interpreted as absence of statistically detectable evidence under the corresponding analysis and was not interpreted as evidence of equivalence between disease groups.
 
@@ -550,7 +550,7 @@ The pseudobulk analyses established where disease-associated complement transcri
 
 \begin{figure}[!h]
 \caption{\textbf{Cross-sectional renal trajectories and disease-group associations.}
-\textbf{A}, Architecture of the five prespecified frozen renal trajectories: proximal tubule, contractile fibroblast, outer-medullary fibroblast, podocyte--parietal epithelial cell (PEC), and endothelial--mesangial. Trajectories are projected onto UMAP-style state-space layouts for visualisation only. The black star indicates the inferred root/early end of the highlighted lineage, the open circle indicates its late end, and arrows show increasing pseudotime. Other lineage paths and metacells are shown in grey for context. \textbf{B}, The same frozen trajectory layouts coloured descriptively by the dominant disease label of each metacell (CKD, AKI, control/other, or unknown). These colours illustrate the distribution of disease-labelled metacells and are not themselves donor-level tests of enrichment or prevalence. \textbf{C}, Selected assay-adjusted donor-level disease associations for lineage occupancy and weighted mean pseudotime position. Columns show AKI and CKD coefficients relative to the normal/reference group for each endpoint. Positive coefficients indicate greater lineage occupancy or a higher mean pseudotime position, whereas negative coefficients indicate lower occupancy or position. Coloured outlined cells denote Benjamini--Hochberg-adjusted $q<0.05$; grey cells indicate $q\geq0.05$ or an unavailable comparison. Coefficients were estimated at the donor level with assay adjustment. Occupancy and pseudotime position represent distinct endpoints and should not be interpreted as longitudinal movement of individual cells.}
+\textbf{A}, Architecture of the five prespecified frozen renal trajectories: proximal tubule, contractile fibroblast, outer-medullary fibroblast, podocyte--parietal epithelial cell (PEC), and endothelial--mesangial. Trajectories are projected onto UMAP-style state-space layouts for visualisation only. The black star indicates the inferred root/early region of the highlighted lineage, the open circle indicates its late region, and arrows show increasing pseudotime. Other lineage paths and metacells are shown in grey for context. \textbf{B}, The same frozen trajectory layouts coloured descriptively by the dominant disease label of each metacell (CKD, AKI, control/other, or unknown). These colours illustrate the distribution of disease-labelled metacells and are not themselves donor-level tests of enrichment or prevalence. \textbf{C}, Selected assay-adjusted donor-level disease associations for lineage occupancy and weighted mean pseudotime position. Columns show AKI and CKD coefficients relative to the normal/reference group for each endpoint. Positive coefficients indicate greater lineage occupancy or a higher mean pseudotime position, whereas negative coefficients indicate lower occupancy or position. Coloured outlined cells denote Benjamini--Hochberg-adjusted $q<0.05$; grey cells indicate $q\geq0.05$ or an unavailable comparison. Coefficients were estimated at the donor level with assay adjustment. Occupancy and pseudotime position represent distinct endpoints and should not be interpreted as longitudinal movement of individual cells.}
 \label{fig:trajectory_disease}
 \end{figure}
 
@@ -659,16 +659,151 @@ Donor-level complement module scores were calculated from pseudobulk expression 
 \paragraph*{S8 Fig.}
 \label{S8_Fig}
 \textbf{Representative lineage structure across the frozen renal cell-state trajectories.}
-Selected Slingshot lineages are shown for proximal tubular, endothelial--mesangial, outer-medullary fibroblast, contractile fibroblast, and podocyte--parietal epithelial cell trajectories. Dots represent donor-preserving metacells and are coloured by scaled lineage-specific pseudotime; point opacity reflects Slingshot lineage weight. Stars indicate the inferred biological root or early end, open circles indicate the late lineage end, and arrows indicate the direction from early to late pseudotime. Shown lineages include proximal tubule L2 and L3, endothelial--mesangial L1 and L3, outer-medullary fibroblast L1, contractile fibroblast L3, and podocyte--PEC L1. Trajectory orientation was fixed by prespecified biological roots and was not selected or reoriented according to disease status or complement expression.
+Selected Slingshot lineages are shown for proximal tubular, endothelial--mesangial, outer-medullary fibroblast, contractile fibroblast, and podocyte--parietal epithelial cell trajectories. Dots represent donor-preserving metacells and are coloured by scaled lineage-specific pseudotime; point opacity reflects Slingshot lineage weight. Stars indicate the inferred biological root or early region, open circles indicate the late trajectory region, and arrows indicate the direction from early to late pseudotime. Shown lineages include proximal tubule L2 and L3, endothelial--mesangial L1 and L3, outer-medullary fibroblast L1, contractile fibroblast L3, and podocyte--PEC L1. Trajectory orientation was fixed by prespecified biological roots and was not selected or reoriented according to disease status or complement expression.
 
 \paragraph*{S9 Fig.}
 \label{S9_Fig}
 \textbf{Extended examples of complement-associated transcription across renal cell-state trajectories.}
-Observed complement-gene expression is shown across selected frozen Slingshot lineages. Metacells are coloured by log-transformed expression [$\log(1+\mathrm{CP10K})$], with the fitted trajectory overlaid. Stars indicate the prespecified root or early end, open circles indicate the late lineage end, and arrows indicate the direction of increasing pseudotime. Panels show \textit{C3} and \textit{C1S} in proximal tubule, \textit{C1R} and \textit{SERPING1} in outer-medullary fibroblasts, \textit{C5} and \textit{CFH} in the endothelial--mesangial trajectory, \textit{CR1} in the podocyte--PEC trajectory, and \textit{CD55} in contractile fibroblasts. Panel annotations report the Benjamini--Hochberg-adjusted tradeSeq association-test and start-versus-end $q$ values, together with the descriptive late-minus-early expression difference. Where adequate paired donor representation was available, the donor-level early-versus-late sensitivity result is also indicated. These plots describe transcriptional variation along inferred cross-sectional cell-state continua and do not establish temporal progression or biochemical complement activation.
+Observed complement-gene expression is shown across selected frozen Slingshot lineages. Metacells are coloured by log-transformed expression [$\log(1+\mathrm{CP10K})$], with the fitted trajectory overlaid. Stars indicate the prespecified root or early region, open circles indicate the late trajectory region, and arrows indicate the direction of increasing pseudotime. Panels show \textit{C3} and \textit{C1S} in proximal tubule, \textit{C1R} and \textit{SERPING1} in outer-medullary fibroblasts, \textit{C5} and \textit{CFH} in the endothelial--mesangial trajectory, \textit{CR1} in the podocyte--PEC trajectory, and \textit{CD55} in contractile fibroblasts. Panel annotations report the Benjamini--Hochberg-adjusted tradeSeq association-test and start-versus-end $q$ values, together with the descriptive late-minus-early expression difference. Where adequate paired donor representation was available, the donor-level early-versus-late sensitivity result is also indicated. These plots describe transcriptional variation along inferred cross-sectional cell-state continua and do not establish temporal progression or biochemical complement activation.
 
 \paragraph*{S1 Table.}
 \label{S1_Table}
 \textbf{Summary of single-nucleus-omic experiments and available source metadata.}
 Experiment-level metadata for the source kidney atlas, including cohort and assay information, specimen and disease annotations, anatomical region, available demographic and clinical variables, tissue-collection details, source accession information, and sequencing/QC metrics. Blank fields indicate metadata that were unavailable in the source table. The table reflects source-level experiment metadata; disease groups and donor-level statistical models used in the present analysis were derived from the harmonised annotations and analysis-specific eligibility criteria described in the Methods.
+
+\paragraph*{S2 Table.}
+\label{S2_Table}
+\textbf{Complete donor-level pseudobulk differential-expression results.}
+Gene-level PyDESeq2 results for the prespecified global disease contrasts and eligible targeted cell-population analyses. Reported fields include gene identifiers, effect-size estimates, nominal and adjusted significance measures, expression-filtering status, and analysis-specific donor and cell counts where applicable. Complete results are retained irrespective of statistical significance. Large gene-level tables that exceed the Excel worksheet row limit are provided as accompanying compressed CSV files.
+
+\paragraph*{S3 Table.}
+\label{S3_Table}
+\textbf{Complement transcriptional module definitions and module-level analyses.}
+Definitions of the canonical non-overlapping complement transcriptional modules, gene-resolution information, donor-level complement-module analyses, and complement-focused trajectory results. CFHR1--CFHR5 are reported separately as a descriptive CFHR family and are not included in the directional regulator module. Module-level quantities represent complement-associated transcription and should not be interpreted as direct measurements of biochemical complement activation.
+
+\paragraph*{S4 Table.}
+\label{S4_Table}
+\textbf{Donor-level trajectory summaries and disease-association analyses.}
+Donor-level summaries of position along the frozen Slingshot trajectories, lineage coverage, disease-group summaries, omnibus and pairwise disease-association tests, and assay-adjusted sensitivity analyses. Individual metacells contribute to donor-level summaries but are not treated as independent biological replicates for disease-association inference.
+
+\paragraph*{S5 Table.}
+\label{S5_Table}
+\textbf{Complete tradeSeq trajectory-associated expression results.}
+Gene-level tradeSeq results along the frozen Slingshot trajectories, including the primary \texttt{associationTest} and secondary \texttt{startVsEndTest}, \texttt{diffEndTest}, and \texttt{patternTest} analyses. Supporting sheets provide test summaries and multiple-testing-family information. Computational batches were combined before false-discovery-rate correction within the predefined trajectory and statistical-test families.
+
+\paragraph*{S6 Table.}
+\label{S6_Table}
+\textbf{Complement-module and trajectory sensitivity and robustness analyses.}
+Sensitivity analyses evaluating complement-module scoring and trajectory inference, including agreement between ULM and AUCell scoring, leave-one-gene-out analyses, associations with technical covariates, variance partitioning, alternative trajectory specifications, and repeated donor-subsampling analyses. These analyses were used to assess whether the reported transcriptional programs and inferred trajectory structures were robust to alternative scoring procedures, individual module genes, technical factors, and perturbation of the trajectory-analysis inputs.
+
+\pagebreak
+
+\section*{Software and computational environment}
+
+Computational analyses were performed in a reproducible Pixi-managed environment (\texttt{hs-ckd-aki}) targeting Apple Silicon macOS (\texttt{osx-arm64}). The environment used Python 3.10.18 and R 4.4.3 with Bioconductor 3.20. Key software versions and their principal uses are summarized in Tables~\ref{tab:software_core} and \ref{tab:software_support}.
+
+\begin{table}[!ht]
+\begin{adjustwidth}{-0.0in}{0in}
+\centering
+\caption{Core software and package versions used in the analysis.}
+\label{tab:software_core}
+\begin{tabular}{p{0.23\linewidth} p{0.13\linewidth} p{0.56\linewidth}}
+\hline
+\textbf{Software / package} & \textbf{Version} & \textbf{Primary use in this study} \\
+\hline
+Python & 3.10.18 & Primary computational environment \\
+R & 4.4.3 & Slingshot and tradeSeq analyses \\
+Bioconductor & 3.20 & R/Bioconductor package environment \\
+Scanpy & 1.11.5 & Single-cell data processing, graph-based analyses, Leiden/PAGA workflows, and Scrublet interface \\
+scvi-tools & 1.3.3 & scVI integration and DECIPHER \\
+PyTorch & 2.7.1 & Computational backend for scvi-tools \\
+PyDESeq2 & 0.5.2 & Pseudobulk differential-expression analysis \\
+decoupler & 2.1.4 & ULM complement-module scoring and AUCell sensitivity analysis \\
+decontx-python & 0.2.0 & Ambient-RNA decontamination \\
+SEACells & 0.3.3 & Metacell construction \\
+CELLxGENE Census & 1.18.0 & Dataset retrieval \\
+Slingshot & 2.14.0 & Lineage inference and pseudotime estimation \\
+tradeSeq & 1.20.0 & Expression testing along inferred trajectories \\
+\hline
+\end{tabular}
+\end{adjustwidth}
+\end{table}
+
+\begin{table}[!ht]
+\begin{adjustwidth}{-0.0in}{0in}
+\centering
+\caption{Supporting software and package versions used in the computational environment.}
+\label{tab:software_support}
+\begin{tabular}{p{0.23\linewidth} p{0.13\linewidth} p{0.56\linewidth}}
+\hline
+\textbf{Software / package} & \textbf{Version} & \textbf{Primary use in this study} \\
+\hline
+AnnData & 0.11.4 & Annotated expression-data representation \\
+NumPy & 2.2.6 & Numerical computation \\
+pandas & 2.3.3 & Tabular data processing \\
+SciPy & 1.15.2 & Statistical and numerical routines \\
+statsmodels & 0.14.6 & Linear mixed-effects modeling \\
+python-igraph & 1.0.0 & Graph implementation supporting Leiden clustering \\
+leidenalg & 0.12.0 & Leiden community-detection support \\
+DelayedMatrixStats & 1.28.1 & Supporting Bioconductor matrix operations \\
+BiocParallel & 1.40.2 & Parallel computation in Bioconductor workflows \\
+SingleCellExperiment & 1.28.1 & Data structure used by tradeSeq \\
+SummarizedExperiment & 1.36.0 & Supporting Bioconductor data structure \\
+\hline
+\end{tabular}
+\end{adjustwidth}
+\end{table}
+
+Scrublet was accessed through \texttt{scanpy.pp.scrublet}; no separate \texttt{scrublet} Python distribution was installed. DECIPHER was accessed through \texttt{scvi.external.Decipher} in scvi-tools. AUCell sensitivity analysis was implemented through \texttt{decoupler.mt.aucell}, rather than through a separate Bioconductor AUCell installation. Ambient-RNA correction used \texttt{decontx-python}, rather than the R \texttt{celda} implementation.
+
+\subsection*{Terminology}
+
+\textbf{Trajectory.}
+An inferred lineage or path through transcriptional-state space. Trajectories represent transcriptional continua and are not interpreted as direct observations of chronological cellular transitions.
+
+\textbf{Pseudotime.}
+A continuous relative ordering of metacells along an inferred Slingshot lineage. Pseudotime was scaled to the interval $[0,1]$ for downstream summaries and represents relative trajectory position rather than chronological time.
+
+\textbf{Early trajectory region.}
+For complement trajectory summaries, scaled pseudotime $\leq 1/3$.
+
+\textbf{Late trajectory region.}
+For complement trajectory summaries, scaled pseudotime $\geq 2/3$.
+
+\textbf{Start versus end.}
+A tradeSeq contrast comparing fitted expression near the beginning and endpoint of an inferred lineage, distinct from the primary test of overall association between expression and pseudotime.
+
+\textbf{Lineage support.}
+Slingshot curve-weight support for assignment of a metacell to an inferred lineage.
+
+\textbf{Donor-level trajectory position.}
+A donor-level summary of lineage position calculated from metacell pseudotime values and Slingshot lineage weights. Individual metacells were not treated as independent biological replicates for donor-level disease inference.
+
+\subsection*{Complement-gene and module terminology}
+
+The term \textit{complement-associated transcription} refers to RNA expression of genes assigned \textit{a priori} to complement-related functional categories. These transcript-level quantities do not constitute direct measurements of complement protein abundance, cleavage, deposition, secretion, or biochemical activation.
+
+The six primary non-overlapping complement transcriptional modules were:
+
+\begin{itemize}
+    \item \textbf{CLASSICAL}: C1QA, C1QB, C1QC, C1R, C1S, C2, C4A, C4B, C4BPA, C4BPB.
+    \item \textbf{LECTIN}: MBL2, FCN1, FCN2, FCN3, MASP1, MASP2, MASP3.
+    \item \textbf{ALTERNATIVE}: C3, CFB, CFD, CFP.
+    \item \textbf{TERMINAL}: C5, C6, C7, C8A, C8B, C8G, C9.
+    \item \textbf{RECEPTOR}: C3AR1, C5AR1, C5AR2, CR1, CR2, ITGAM, ITGAX, VSIG4.
+    \item \textbf{REGULATOR}: CFH, CFI, CD46, CD55, CD59, SERPING1.
+\end{itemize}
+
+CFHR1--CFHR5 were retained as a separate descriptive CFHR family and excluded from the directional regulator composite.
+
+\subsection*{Multiple-testing and FDR conventions}
+
+Unless otherwise specified, multiple-testing correction used the Benjamini--Hochberg false-discovery-rate procedure, with statistical significance defined at $q < 0.05$.
+
+For pseudobulk differential-expression analyses, adjusted DESeq2/PyDESeq2 $p$-values were reported as $q$-values. For donor-level module analyses, Benjamini--Hochberg correction was applied across the corresponding tested module-level hypotheses.
+
+For tradeSeq analyses, computational batches were not treated as separate multiple-testing families. Batch-level results were combined before Benjamini--Hochberg correction within each predefined trajectory $\times$ statistical-test $\times$ contrast family. The primary trajectory-expression discovery analysis used \texttt{associationTest}; \texttt{startVsEndTest}, \texttt{diffEndTest}, and \texttt{patternTest} were secondary analyses.
+
+Unless explicitly described as descriptive or sensitivity analyses, FDR-significant findings were defined using adjusted $q$-values rather than nominal $p$-values.
 
 \end{document}
